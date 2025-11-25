@@ -1,0 +1,13 @@
+
+
+	URL      : leadmanager.hexatechsolution.com
+	DBUser   : hexation_leadmanager
+        Password : leadmanager123	
+	
+
+		
+
+	URL	 :https://leadmanager.hexatechsolution.com
+	Email    :leadmanager@htc.com
+	Password : Lead@htc
+	
