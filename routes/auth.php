@@ -18,15 +18,15 @@ use Illuminate\Support\Facades\Route;
 //                 ->middleware('guest');
 
 use Illuminate\Support\Facades\Hash;
-Route::get('/login', function(){
-    // return Hash::make('12345678');
-    abort(404);
-})
+// Route::get('/login', function(){
+//     // return Hash::make('12345678');
+//     abort(404);
+// })
+//                 ->middleware('guest')
+//                 ->name('login');
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])
                 ->middleware('guest')
                 ->name('login');
-Route::get('/loginhtsf', [AuthenticatedSessionController::class, 'create'])
-                ->middleware('guest')
-                ->name('loginr');
 
 Route::post('/loginyuiw', [AuthenticatedSessionController::class, 'store'])
                 ->middleware('guest')->name('login.post');
