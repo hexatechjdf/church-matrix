@@ -23,6 +23,7 @@ class CreateUsersTable extends Migration
             $table->foreign('added_by')->references('id')->on('users')->onDelete('cascade');
             $table->text('ghl_api_key')->nullable();
             $table->string('location')->nullable();
+            $table->string('timezone')->nullable();
             $table->boolean('is_active')->default(1);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

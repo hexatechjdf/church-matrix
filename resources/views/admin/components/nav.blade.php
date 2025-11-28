@@ -21,6 +21,31 @@
                 <span >Setting</span>
             </a>
         </li>
+
+          <li class="leftbar-menu-item">
+            <a href="{{ route('church-matrix.index') }}" class="menu-link">
+                <i data-feather="layers" class="align-self-center vertical-menu-icon icon-dual-vertical"></i>
+                <span>Church Matrix</span>
+            </a>
+        </li>
+    @endif
+
+    {{-- FOr company user --}}
+
+       @if (auth()->user()->role == 1)
+        <li class="leftbar-menu-item">
+           <a href="{{ route('settings.timezone') }}" class="menu-link">
+                <i data-feather="pie-users" class="align-self-center vertical-menu-icon icon-dual-vertical"></i>
+                <span >Setting</span>
+            </a>
+        </li>
+
+          {{-- <li class="leftbar-menu-item">
+            <a href="" class="menu-link">
+                <i data-feather="layers" class="align-self-center vertical-menu-icon icon-dual-vertical"></i>
+                <span>Church Matrix</span>
+            </a>
+        </li> --}}
     @endif
 </ul>
 
