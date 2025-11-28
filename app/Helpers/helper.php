@@ -8,10 +8,38 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
 use Illuminate\Http\Client\Request;
 use PhpParser\Node\Stmt\TryCatch;
+use App\Helpers\gCache;
 
 use Illuminate\Support\Facades\Cache;
 
 
+
+function supersetting($key, $default = '', $keys_contain = null)
+{
+    Cache::forget($key);
+    try {
+        $setting = gCache::get($key, function () use ($default, $key, $keys_contain) {
+            $setting = Setting::when($keys_contain, function ($q) use ($key, $keys_contain) {
+                return $q->where('key', 'LIKE', $keys_contain)->pluck('value', 'key');
+            }, function ($q) use ($key) {
+                return $q->where(['key' => $key])->first();
+            });
+
+            $value = $keys_contain ? $setting : ($setting->value ?? $default);
+            gCache::put($key, $value);
+            return $value;
+        });
+        return $setting;
+    } catch (\Exception $e) {
+        return null;
+    }
+
+}
+
+function loginUser()
+{
+    return auth()->user();
+}
 
 function login_id($id = "")
 {
@@ -553,6 +581,7 @@ function ConnectOauth($loc,$token,$method=''){
                     $res1 = $client->sendAsync($request)->wait();
                     $red =  $res1->getBody()->getContents();
                     $red = json_decode($red);
+                    dd($red);
 
                     if ($red && property_exists($red, 'redirectUrl')) {
                         $url = $red->redirectUrl;
@@ -562,6 +591,8 @@ function ConnectOauth($loc,$token,$method=''){
 
                         $tokenx  = ghl_token($code, '', 'eee3');
                     }
+
+                    dd($tokenx,$locurl);
 
     return $tokenx;
 

@@ -8,6 +8,8 @@ use App\Http\Controllers\GoHieghLevelController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\PlanningCenterController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\Location\IndexController;
+use App\Http\Controllers\Location\AutoAuthController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -91,7 +93,12 @@ Route::middleware('auth')->group(function () {
     });
 
     //Setting
-   
+
+    Route::prefix('locations')->name('locations.')->group(function () {
+        $controller = IndexController::class;
+        Route::get('/list', [$controller, 'list'])->name('list');
+    });
+
 });
 
  Route::prefix('settings')->name('setting.')->group(function () {
@@ -99,11 +106,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/add', [$controller, 'add'])->name('add');
         Route::post('/save/{id?}', [$controller, 'save'])->name('save');
     });
-    
+
       // GHL Oauth
    Route::prefix('crm')->name('crm.')->group(function () {
-        Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('callback');
+        // Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('callback');
+        Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('oauth_callback');
     });
+
 
 // Planning Center Connection Routes
     Route::prefix('planning-center')->name('planningcenter.')->group(function () {
@@ -128,11 +137,28 @@ Route::get('/post-people', [PlanningCenterController::class, 'capturelead'])->na
 //     dd($var);
 // });
 
-Route::get('check/auth', [DashboardController::class, 'authCheck'])->name('auth.check');
-Route::get('checking/auth', [DashboardController::class, 'authChecking'])->name('auth.checking');
+
+Route::prefix('locations')->name('locations.')->group(function () {
+    Route::prefix('churchmatrix')->name('churchmatrix.')->group(function () {
+        $controller = IndexController::class;
+        Route::get('/', [$controller, 'index'])->name('index');
+    });
+});
+
+
+Route::get('check/auth', [AutoAuthController::class, 'connect'])->name('auth.check');
+// Route::get('check/auth', [DashboardController::class, 'authCheck'])->name('auth.check');
+Route::get('checking/auth', [AutoAuthController::class, 'authChecking'])->name('auth.checking');
+// Route::get('checking/auth', [DashboardController::class, 'authChecking'])->name('auth.checking');
 Route::get('workflow/saved', [DashboardController::class, 'saveWorkflow'])->name('auth.saveWorkflow');
+Route::get('planning', [DashboardController::class, 'planning'])->name('auth.planning');
 Route::get('disconnectplanning', [DashboardController::class, 'disconnectplanning'])->name('auth.disconnectplanning');
 Route::get('listworkflows', [DashboardController::class, 'listworkflows'])->name('auth.listworkflows');
+
+
+// Route::get('check/auth', [AutoAuthController::class, 'connect'])->name('auth.check');
+Route::get('check/auth/error', [AutoAuthController::class, 'authError'])->name('error');
+// Route::get('checking/auth', [AutoAuthController::class, 'authChecking'])->name('auth.checking');
 
 Route::get('/ll', function(){
     Auth::loginUsingId(1);
@@ -143,5 +169,5 @@ Route::get('/ll', function(){
 Route::get('/tokens_renew', function () {
 
     tokens_renew();
-    
+
 })->name('tokens_renew');
