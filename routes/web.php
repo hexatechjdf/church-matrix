@@ -10,6 +10,11 @@ use App\Http\Controllers\PlanningCenterController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\Location\IndexController;
 use App\Http\Controllers\Location\AutoAuthController;
+use App\Http\Controllers\ChurchMatrixController;
+use App\Http\Controllers\TimeZoneController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\RecordController;
+use App\Http\Controllers\ServiceTimeController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -27,24 +32,24 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/cache', function(){
+Route::get('/cache', function () {
     \Artisan::call("optimize:clear");
     \Artisan::call("cache:clear");
     \Artisan::call("config:clear");
 });
 
-Route::get('testwebhook/{id}',function($id){
+Route::get('testwebhook/{id}', function ($id) {
     //
     $res = \App\Models\Setting::where(['key' => 'planning_organization_id', 'value' => $id])->first();
-            //\DB::table('logs')->insert(['message'=>$res]);
+    //\DB::table('logs')->insert(['message'=>$res]);
 
 
-            if (!$res) {
-                echo 'Unable To connect';
-                die;
-            }
-            request()->user_id = $res->location_id;
-    $dt=planning_api_call('webhooks/v2/batch_update','POST','{
+    if (!$res) {
+        echo 'Unable To connect';
+        die;
+    }
+    request()->user_id = $res->location_id;
+    $dt = planning_api_call('webhooks/v2/batch_update', 'POST', '{
     "data": {
         "attributes": {
             "url": "https://chrchfnnls.com/api/planning-lead-capture",
@@ -56,17 +61,17 @@ Route::get('testwebhook/{id}',function($id){
         }
     }
 }');
-dd($dt);
+    dd($dt);
 });
 
-Route::get('/hitapiloc', function(){
-   $client = new Client();
-$headers = [
-  'Authorization' => 'Bearer b2858b8a-5684-4fae-a951-68f3de65699f'
-];
-$request = new Psr7Request('POST', 'https://services.msgsndr.com/oauth/authorize?client_id=622eec05cb0d702f905aa5e8-l0qdiicz&location_id=NP4dT88lEnnjb3WVmyAQ&response_type=code&redirect_uri=https://oauth.requestcatcher.com/test/myid&scope=conversations/message.write&userType=Location', $headers);
-$res = $client->sendAsync($request)->wait();
-echo $res->getBody()->getContents();
+Route::get('/hitapiloc', function () {
+    $client = new Client();
+    $headers = [
+        'Authorization' => 'Bearer b2858b8a-5684-4fae-a951-68f3de65699f'
+    ];
+    $request = new Psr7Request('POST', 'https://services.msgsndr.com/oauth/authorize?client_id=622eec05cb0d702f905aa5e8-l0qdiicz&location_id=NP4dT88lEnnjb3WVmyAQ&response_type=code&redirect_uri=https://oauth.requestcatcher.com/test/myid&scope=conversations/message.write&userType=Location', $headers);
+    $res = $client->sendAsync($request)->wait();
+    echo $res->getBody()->getContents();
 });
 
 
@@ -112,13 +117,63 @@ Route::middleware('auth')->group(function () {
         // Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('callback');
         Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('oauth_callback');
     });
+// });
+
+Route::prefix('settings')->name('setting.')->group(function () {
+    $controller = SettingController::class;
+    Route::get('/add', [$controller, 'add'])->name('add');
+    Route::post('/save/{id?}', [$controller, 'save'])->name('save');
+});
+
+
+Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
+    Route::get('/', [ChurchMatrixController::class, 'index'])->name('index');
+    Route::post('/save-api', [ChurchMatrixController::class, 'saveApi'])->name('save-api');
+    Route::post('/save-location', [ChurchMatrixController::class, 'saveLocation'])->name('save-location');
+    Route::post('/save-region', [ChurchMatrixController::class, 'saveRegion'])->name('save-region');
+    Route::post('/save-location', [ChurchMatrixController::class, 'saveLocation'])->name('save-location');
+});
+
+
+Route::prefix('church-matrix-settings')->group(function () {
+    Route::get('/timezone', [TimeZoneController::class, 'showTimezoneForm'])->name('settings.timezone');
+    Route::post('/timezone', [TimeZoneController::class, 'saveTimezone'])->name('settings.timezone.save');
+});
+
+
+Route::prefix('events')->name('events.')->group(function () {
+    Route::get('/', [EventController::class, 'index'])->name('index');
+    Route::get('/create', [EventController::class, 'create'])->name('create');
+    Route::post('/store', [EventController::class, 'store'])->name('store');
+});
+
+
+Route::prefix('service-times')->name('service-times.')->group(function () {
+    Route::get('/', [ServiceTimeController::class, 'index'])->name('index');
+    Route::get('/create', [ServiceTimeController::class, 'create'])->name('create');
+    Route::post('/store', [ServiceTimeController::class, 'store'])->name('store');
+});
+
+
+Route::prefix('records')->name('records.')->group(function () {
+    Route::get('/', [RecordController::class, 'index'])->name('index');
+    Route::get('/create', [RecordController::class, 'create'])->name('create');
+    Route::post('/store', [RecordController::class, 'store'])->name('store');
+});
+
+
+
+// GHL Oauth
+Route::prefix('crm')->name('crm.')->group(function () {
+    Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('callback');
+});
 
 
 // Planning Center Connection Routes
-    Route::prefix('planning-center')->name('planningcenter.')->group(function () {
-        $controller = PlanningCenterController::class;
-        Route::get('/callback', [$controller, 'callback'])->name('callback');
-    });
+Route::prefix('planning-center')->name('planningcenter.')->group(function () {
+    $controller = PlanningCenterController::class;
+    Route::get('/callback', [$controller, 'callback'])->name('callback');
+});
 
 
 // Testing Routes
@@ -160,7 +215,7 @@ Route::get('listworkflows', [DashboardController::class, 'listworkflows'])->name
 Route::get('check/auth/error', [AutoAuthController::class, 'authError'])->name('error');
 // Route::get('checking/auth', [AutoAuthController::class, 'authChecking'])->name('auth.checking');
 
-Route::get('/ll', function(){
+Route::get('/ll', function () {
     Auth::loginUsingId(1);
     return redirect()->route('dashboard');
 });
