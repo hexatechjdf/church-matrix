@@ -8,7 +8,7 @@ use App\Models\Setting;
 use App\Helpers\CRM;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Jobs\ManageCampusJob;
+use App\Jobs\churchmatrix\ManageCampusJob;
 
 class AutoAuthController extends Controller
 {
@@ -18,6 +18,9 @@ class AutoAuthController extends Controller
     public function authChecking(Request $req)
     {
         if ($req->ajax()) {
+            // $user = User::with('crmtoken')->where('id', 885)->first();
+            // dispatch((new ManageCampusJob($user)))->delay(5);
+            // return 1;
             $t = $req->type ?? 'planning';
             if ($req->has('location') && $req->has('token')) {
                 $location = $req->location;
@@ -69,12 +72,17 @@ class AutoAuthController extends Controller
                 $res->is_crm = $res->crm_connected;
                 $res->token_id = encrypt($res->user_id);
 
-                $res->route = $t == 'planning' ? route('auth.planning') : route('locations.churchmatrix.index');
+                $routes = [
+                    'planning' => route('auth.planning'),
+                    'churchmatrix' => route('locations.churchmatrix.index'),
+                ];
 
-                if($t != 'planning')
-                {
-                    dispatch((new ManageCampusJob($user)))->delay(5);
-                }
+                $res->route = @$routes[$t] ?? route('auth.planning');
+
+                // if($t != 'planning')
+                // {
+                //     dispatch((new ManageCampusJob($user)))->delay(5);
+                // }
 
                 return response()->json($res);
             }

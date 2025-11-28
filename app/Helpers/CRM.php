@@ -191,6 +191,7 @@ class CRM
             // dd($red);
             $red = json_decode($red);
 
+
             //  \Log::info(['newLocToken',$red]);
 
             if ($red && property_exists($red, 'redirectUrl')) {
