@@ -1,0 +1,255 @@
+:root {
+        --primary: #4a6cf7;
+        --primary-dark: #1d45d8;
+        --secondary: #6c5ce7;
+        --accent: #00b894;
+        --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .settings-content-wrapper {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding: 0;
+    }
+
+    .modules-section {
+        padding: 40px 20px;
+    }
+
+    .modules-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+        max-width: 100%;
+        margin-bottom: 30px;
+    }
+
+    .module-card {
+        position: relative;
+        padding: 32px 28px;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        border: 1px solid #e8ecf1;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-align: left;
+    }
+
+    .module-card.active {
+        border-color: var(--primary);
+        background: #f7faff;
+        box-shadow: 0 8px 24px rgba(74, 108, 247, 0.15);
+    }
+
+    .module-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        background: var(--gradient-1);
+        transform: scaleY(0);
+        transition: transform 0.3s ease;
+    }
+
+    .module-card:nth-child(2)::before {
+        background: var(--gradient-2);
+    }
+
+    .module-card:nth-child(3)::before {
+        background: var(--gradient-3);
+    }
+
+    .module-card:hover::before,
+    .module-card.active::before {
+        transform: scaleY(1);
+    }
+
+    .module-card:hover {
+        transform: translateX(8px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        border-color: rgba(74, 108, 247, 0.3);
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 70px;
+        height: 70px;
+        min-width: 70px;
+        background: linear-gradient(135deg, #667eea15 0%, #764ba225 100%);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .module-card:nth-child(2) .icon-wrapper {
+        background: linear-gradient(135deg, #f093fb15 0%, #f5576c25 100%);
+    }
+
+    .module-card:nth-child(3) .icon-wrapper {
+        background: linear-gradient(135deg, #4facfe15 0%, #00f2fe25 100%);
+    }
+
+    .module-card:hover .icon-wrapper,
+    .module-card.active .icon-wrapper {
+        transform: scale(1.08);
+        box-shadow: 0 6px 16px rgba(74, 108, 247, 0.15);
+    }
+
+    .module-icon {
+        font-size: 36px;
+        background: var(--gradient-1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .module-card:nth-child(2) .module-icon {
+        background: var(--gradient-2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .module-card:nth-child(3) .module-icon {
+        background: var(--gradient-3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .module-content {
+        flex: 1;
+    }
+
+    .module-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 6px;
+        letter-spacing: -0.2px;
+    }
+
+    .module-desc {
+        font-size: 14px;
+        color: #718096;
+        line-height: 1.5;
+        margin-bottom: 0;
+    }
+
+    .module-arrow {
+        font-size: 20px;
+        color: #cbd5e0;
+        transition: all 0.3s ease;
+        margin-left: auto;
+    }
+
+    .module-card:hover .module-arrow,
+    .module-card.active .module-arrow {
+        color: var(--primary);
+        transform: translateX(4px) rotate(90deg);
+    }
+
+    .stats-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(0, 184, 148, 0.1);
+        color: #00b894;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .stats-badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #00b894;
+        border-radius: 50%;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    /* Content Area Styles */
+    .module-content-area {
+        display: none;
+        margin-top: 20px;
+        padding: 30px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e8ecf1;
+        animation: slideDown 0.4s ease;
+    }
+
+    .module-content-area.active {
+        display: block;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .modules-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .module-card {
+            padding: 24px 20px;
+        }
+
+        .icon-wrapper {
+            width: 60px;
+            height: 60px;
+            min-width: 60px;
+        }
+
+        .module-icon {
+            font-size: 30px;
+        }
+
+        .module-title {
+            font-size: 18px;
+        }
+
+        .module-desc {
+            font-size: 13px;
+        }
+    }
+
+    .module-card:focus-within {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
