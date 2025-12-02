@@ -3,46 +3,38 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SaveChurchApiRequest;
-use App\Services\ChurchMatrixService;
+use App\Services\ChurchService;
 use Illuminate\Http\Request;
 use App\Models\ChurchApi;
+use App\Models\CrmToken;
 
 
 class ChurchMatrixController extends Controller
 {
     protected $service;
 
-    public function __construct(ChurchMatrixService $service)
+    public function __construct(ChurchService $service)
     {
         $this->service = $service;
     }
 
     public function index()
     {
-        $settings = $this->service->getLatestSettings();
-        $regions = $settings ? $this->service->fetchRegions($settings) : null;
-        $allSettings = ChurchApi::orderBy('id', 'desc')->get();
+        $settings = CrmToken::where(['user_id' => login_id(), 'crm_type' => 'church'])->first();
+        $regions =  $this->service->fetchRegions() ?? null;
 
-        return view('admin.church_matrix.index', compact('settings', 'regions', 'allSettings'));
+        return view('admin.church_matrix.index', compact('settings', 'regions'));
     }
 
 
     public function saveApi(SaveChurchApiRequest $request)
     {
         $settings = $this->service->saveApiCredentials($request->validated());
-        $regions = $this->service->fetchRegions($settings);
-
-        if (!$regions) {
-            return redirect()->route('church-matrix.index')
-                ->with('error', 'Invalid email or API key – connection failed!');
-        }
+        $regions =  $this->service->fetchRegions() ?? null;
 
         return redirect()->route('church-matrix.index')
-            ->with('success', 'Connected successfully!')->with('regions', $regions);
+            ->with('success', 'Connected successfully!');
     }
-
-
-
 
     public function saveRegion(Request $request)
     {
@@ -50,12 +42,7 @@ class ChurchMatrixController extends Controller
             'region_id' => 'required|integer',
         ]);
 
-        $settings = $this->service->saveRegion($request->region_id);
-
-        if (!$settings) {
-            return redirect()->route('church-matrix.index')
-                ->with('error', 'No API credentials found. Please save API first.');
-        }
+        $this->service->saveRegion($request->region_id);
 
         return redirect()->route('church-matrix.index')
             ->with('success', 'Region saved successfully!');
@@ -67,12 +54,7 @@ class ChurchMatrixController extends Controller
             'location_id' => 'required|string',
         ]);
 
-        $settings = $this->service->saveLocation($request->location_id);
-
-        if (!$settings) {
-            return redirect()->route('church-matrix.index')
-                ->with('error', 'No API credentials found. Please save API first.');
-        }
+        $this->service->saveLocation($request->location_id);
 
         return redirect()->route('church-matrix.index')
             ->with('success', 'Location ID saved successfully!');

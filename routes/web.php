@@ -9,14 +9,14 @@ use App\Http\Controllers\GoHieghLevelController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\PlanningCenterController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\Location\IndexController;
+use App\Http\Controllers\Location\Churchmatrix\IndexController;
+use App\Http\Controllers\Location\Planning\PlanningController;
 use App\Http\Controllers\Location\AutoAuthController;
 use App\Http\Controllers\ChurchMatrixController;
-use App\Http\Controllers\TimeZoneController;
-use App\Http\Controllers\EventController;
-use App\Http\Controllers\RecordController;
-use App\Http\Controllers\ServiceTimeController;
-use App\Http\Controllers\SettingIntergration;
+use App\Http\Controllers\Location\Churchmatrix\TimeZoneController;
+use App\Http\Controllers\Location\Churchmatrix\RecordController;
+use App\Http\Controllers\Location\Churchmatrix\ServiceTimeController;
+use App\Http\Controllers\Location\Churchmatrix\SettingIntergration;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -136,38 +136,6 @@ Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
 });
 
 
-Route::prefix('setting-intergration')->name('setting-intergration.')->group(function () {
-    Route::get('/', [SettingIntergration::class, 'index'])->name('index');
-});
-
-Route::prefix('church-matrix-settings')->group(function () {
-    Route::get('/timezone', [TimeZoneController::class, 'showTimezoneForm'])->name('settings.timezone');
-    Route::post('/timezone', [TimeZoneController::class, 'saveTimezone'])->name('settings.timezone.save');
-});
-
-
-
-Route::prefix('events')->name('events.')->group(function () {
-    Route::get('/', [ChurchEventController::class, 'index'])->name('index');
-    Route::post('/store', [ChurchEventController::class, 'store'])->name('store');
-    Route::put('/{id}', [ChurchEventController::class, 'update'])->name('update');
-    Route::delete('/{id}', [ChurchEventController::class, 'destroy'])->name('destroy');
-});
-
-
-
-Route::prefix('service-times')->name('service-times.')->group(function () {
-    Route::get('/', [ServiceTimeController::class, 'index'])->name('index');
-    Route::post('/store', [ServiceTimeController::class, 'store'])->name('store');
-    Route::put('/{serviceTime}', [ServiceTimeController::class, 'update'])->name('update');
-});
-
-
-Route::prefix('records')->name('records.')->group(function () {
-    Route::get('/', [RecordController::class, 'index'])->name('index');
-    Route::get('/create', [RecordController::class, 'create'])->name('create');
-    Route::post('/store', [RecordController::class, 'store'])->name('store');
-});
 
 
 
@@ -200,9 +168,51 @@ Route::prefix('locations')->name('locations.')->group(function () {
     Route::prefix('churchmatrix')->name('churchmatrix.')->group(function () {
         $controller = IndexController::class;
         Route::get('/', [$controller, 'index'])->name('index');
+
+
+        Route::prefix('setting-intergration')->name('setting-intergration.')->group(function () {
+            Route::get('/', [SettingIntergration::class, 'index'])->name('index');
+        });
+
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::post('/timezone', [TimeZoneController::class, 'saveTimezone'])->name('timezone.save');
+        });
+
+
+
+        Route::prefix('events')->name('events.')->group(function () {
+            Route::get('/', [ChurchEventController::class, 'index'])->name('index');
+            Route::post('/store', [ChurchEventController::class, 'store'])->name('store');
+            Route::put('/{id}', [ChurchEventController::class, 'update'])->name('update');
+            Route::delete('/{id}', [ChurchEventController::class, 'destroy'])->name('destroy');
+        });
+
+
+
+        Route::prefix('service-times')->name('service-times.')->group(function () {
+            Route::get('/', [ServiceTimeController::class, 'index'])->name('index');
+            Route::post('/store', [ServiceTimeController::class, 'store'])->name('store');
+            Route::put('/{serviceTime}', [ServiceTimeController::class, 'update'])->name('update');
+        });
+
+
+        Route::prefix('records')->name('records.')->group(function () {
+            Route::get('/', [RecordController::class, 'index'])->name('index');
+            Route::get('/create', [RecordController::class, 'create'])->name('create');
+            Route::post('/store', [RecordController::class, 'store'])->name('store');
+        });
+
+        Route::prefix('planningcenter')->name('planningcenter.')->group(function () {
+            $c = PlanningController::class;
+            Route::get('/', [$c, 'index'])->name('index');
+            Route::get('/get/settings', [$c, 'getPlanningSettings'])->name('get.settings');
+            Route::get('/headcounts/visualization', [$c, 'headCountGraphs'])->name('headcount.visuals');
+        });
     });
 });
 
+
+Route::get('/test/eventtimes', [PlanningController::class, 'eventtimes']);
 
 Route::get('check/auth', [AutoAuthController::class, 'connect'])->name('auth.check');
 // Route::get('check/auth', [DashboardController::class, 'authCheck'])->name('auth.check');

@@ -73,7 +73,7 @@ class AutoAuthController extends Controller
                 $res->token_id = encrypt($res->user_id);
 
                 $routes = [
-                    'planning' => route('auth.planning'),
+                    'planning' => route('locations.planningcenter.index'),
                     'churchmatrix' => route('locations.churchmatrix.index'),
                 ];
 
