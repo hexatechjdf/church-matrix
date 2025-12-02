@@ -1,17 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Location\Churchmatrix;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use DateTimeZone;
 use DateTime;
 
-
 class TimeZoneController extends Controller
 {
-
-
     public function showTimezoneForm()
     {
         $user = Auth::user();

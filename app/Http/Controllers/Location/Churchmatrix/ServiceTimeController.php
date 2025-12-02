@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Location\Churchmatrix;
 
 use App\Http\Requests\StoreServiceTimeRequest;
 use App\Models\ServiceTime;
