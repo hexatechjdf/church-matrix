@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CampaignsController;
+use App\Http\Controllers\ChurchEventController;
 use App\Http\Controllers\DialController;
 use App\Http\Controllers\GoHieghLevelController;
 use App\Http\Controllers\LocationsController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\TimeZoneController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\ServiceTimeController;
+use App\Http\Controllers\SettingIntergration;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -103,21 +105,20 @@ Route::middleware('auth')->group(function () {
         $controller = IndexController::class;
         Route::get('/list', [$controller, 'list'])->name('list');
     });
-
 });
 
- Route::prefix('settings')->name('setting.')->group(function () {
-        $controller = SettingController::class;
-        Route::get('/add', [$controller, 'add'])->name('add');
-        Route::post('/save/{id?}', [$controller, 'save'])->name('save');
-    });
 
-      // GHL Oauth
-   Route::prefix('crm')->name('crm.')->group(function () {
-        // Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('callback');
-        Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('oauth_callback');
-    });
-// });
+
+// GHL Oauth
+Route::prefix('crm')->name('crm.')->group(function () {
+    // Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('callback');
+    Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('oauth_callback');
+});
+
+Route::prefix('locations')->name('locations.')->group(function () {
+    $controller = IndexController::class;
+    Route::get('/list', [$controller, 'list'])->name('list');
+});
 
 Route::prefix('settings')->name('setting.')->group(function () {
     $controller = SettingController::class;
@@ -135,23 +136,30 @@ Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
 });
 
 
+Route::prefix('setting-intergration')->name('setting-intergration.')->group(function () {
+    Route::get('/', [SettingIntergration::class, 'index'])->name('index');
+});
+
 Route::prefix('church-matrix-settings')->group(function () {
     Route::get('/timezone', [TimeZoneController::class, 'showTimezoneForm'])->name('settings.timezone');
     Route::post('/timezone', [TimeZoneController::class, 'saveTimezone'])->name('settings.timezone.save');
 });
 
 
+
 Route::prefix('events')->name('events.')->group(function () {
-    Route::get('/', [EventController::class, 'index'])->name('index');
-    Route::get('/create', [EventController::class, 'create'])->name('create');
-    Route::post('/store', [EventController::class, 'store'])->name('store');
+    Route::get('/', [ChurchEventController::class, 'index'])->name('index');
+    Route::post('/store', [ChurchEventController::class, 'store'])->name('store');
+    Route::put('/{id}', [ChurchEventController::class, 'update'])->name('update');
+    Route::delete('/{id}', [ChurchEventController::class, 'destroy'])->name('destroy');
 });
+
 
 
 Route::prefix('service-times')->name('service-times.')->group(function () {
     Route::get('/', [ServiceTimeController::class, 'index'])->name('index');
-    Route::get('/create', [ServiceTimeController::class, 'create'])->name('create');
     Route::post('/store', [ServiceTimeController::class, 'store'])->name('store');
+    Route::put('/{serviceTime}', [ServiceTimeController::class, 'update'])->name('update');
 });
 
 
@@ -162,11 +170,6 @@ Route::prefix('records')->name('records.')->group(function () {
 });
 
 
-
-// GHL Oauth
-Route::prefix('crm')->name('crm.')->group(function () {
-    Route::get('/callback', [GoHieghLevelController::class, 'callback'])->name('callback');
-});
 
 
 // Planning Center Connection Routes
@@ -224,5 +227,21 @@ Route::get('/ll', function () {
 Route::get('/tokens_renew', function () {
 
     tokens_renew();
-
 })->name('tokens_renew');
+
+
+
+
+// use App\Models\ChurchEvent;
+// use App\Services\ChurchEventService;
+
+// Route::get('/sync-events', function(ChurchEventService $service){
+//     $events = ChurchEvent::whereNull('cm_id')->get();
+//     foreach($events as $event){
+//         $cm_id = $service->createEventToAPI($event->name);
+//         if($cm_id){
+//             $event->update(['cm_id' => $cm_id]);
+//         }
+//     }
+//     return "Sync completed!";
+// });

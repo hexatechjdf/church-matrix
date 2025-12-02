@@ -1,8 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Events')
-
-@section('content')
 <div class="row">
     <div class="col-sm-12">
         <div class="page-title-box">
@@ -94,5 +89,3 @@
 </div>
 
 @include('records.add')
-
-@endsection
