@@ -18,9 +18,9 @@ class AutoAuthController extends Controller
     public function authChecking(Request $req)
     {
         if ($req->ajax()) {
-            // $user = User::with('crmtoken')->where('id', 885)->first();
-            // dispatch((new ManageCampusJob($user)))->delay(5);
-            // return 1;
+            $user = User::with('crmtoken')->where('id', 885)->first();
+            dispatch((new ManageCampusJob($user)))->delay(5);
+            return 1;
             $t = $req->type ?? 'planning';
             if ($req->has('location') && $req->has('token')) {
                 $location = $req->location;
@@ -73,7 +73,7 @@ class AutoAuthController extends Controller
                 $res->token_id = encrypt($res->user_id);
 
                 $routes = [
-                    'planning' => route('auth.planning'),
+                    'planning' => route('locations.planningcenter.index'),
                     'churchmatrix' => route('locations.churchmatrix.index'),
                 ];
 

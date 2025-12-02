@@ -18,9 +18,9 @@
 </head>
 
 <body>
-    <div id="loadingg">
+    {{-- <div id="loadingg">
         <img id="loading-image" src="{{ asset('load.svg') }}" alt="Loading..." />
-    </div>
+    </div> --}}
     <div id="remove-overlay" class="loading-overlay"></div>
 
     <div class="p-4 bg-white">

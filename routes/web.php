@@ -8,7 +8,8 @@ use App\Http\Controllers\GoHieghLevelController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\PlanningCenterController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\Location\IndexController;
+use App\Http\Controllers\Location\Churchmatrix\IndexController;
+use App\Http\Controllers\Location\Planning\PlanningController;
 use App\Http\Controllers\Location\AutoAuthController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
@@ -118,6 +119,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('planning-center')->name('planningcenter.')->group(function () {
         $controller = PlanningCenterController::class;
         Route::get('/callback', [$controller, 'callback'])->name('callback');
+
     });
 
 
@@ -143,8 +145,16 @@ Route::prefix('locations')->name('locations.')->group(function () {
         $controller = IndexController::class;
         Route::get('/', [$controller, 'index'])->name('index');
     });
+    Route::prefix('planningcenter')->name('planningcenter.')->group(function () {
+        $c = PlanningController::class;
+        Route::get('/', [$c, 'index'])->name('index');
+        Route::get('/get/settings', [$c, 'getPlanningSettings'])->name('get.settings');
+        Route::get('/headcounts/visualization', [$c, 'headCountGraphs'])->name('headcount.visuals');
+    });
 });
 
+
+Route::get('/test/eventtimes', [PlanningController::class, 'eventtimes']);
 
 Route::get('check/auth', [AutoAuthController::class, 'connect'])->name('auth.check');
 // Route::get('check/auth', [DashboardController::class, 'authCheck'])->name('auth.check');

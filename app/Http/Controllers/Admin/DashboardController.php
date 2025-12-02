@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Setting;
+use App\Helpers\CRM;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
 
@@ -16,6 +17,7 @@ class DashboardController extends Controller
 
     public function dashboard(Request $req)
     {
+        $connecturl = CRM::directConnect();
         return view('admin.dashboard', get_defined_vars());
     }
 
