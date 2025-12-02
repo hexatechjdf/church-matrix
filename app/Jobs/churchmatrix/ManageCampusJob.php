@@ -86,14 +86,6 @@ class ManageCampusJob implements ShouldQueue
     }
 
 
-
-
-
-
-
-
-
-
     // return collect($apiResponse['errors'] ?? [])
     // ->flatten()
     // ->contains("has already been used.");
