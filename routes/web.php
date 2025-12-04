@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CampaignsController;
-use App\Http\Controllers\ChurchEventController;
 use App\Http\Controllers\DialController;
 use App\Http\Controllers\GoHieghLevelController;
 use App\Http\Controllers\LocationsController;
@@ -17,6 +16,7 @@ use App\Http\Controllers\Location\Churchmatrix\TimeZoneController;
 use App\Http\Controllers\Location\Churchmatrix\RecordController;
 use App\Http\Controllers\Location\Churchmatrix\ServiceTimeController;
 use App\Http\Controllers\Location\Churchmatrix\SettingIntergration;
+use App\Http\Controllers\Location\Churchmatrix\ChurchEventController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -134,9 +134,6 @@ Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
     Route::post('/save-region', [ChurchMatrixController::class, 'saveRegion'])->name('save-region');
     Route::post('/save-location', [ChurchMatrixController::class, 'saveLocation'])->name('save-location');
 });
-
-
-
 
 
 
