@@ -509,3 +509,13 @@ function _tokens_renew()
 
 
 }
+
+
+function getChurchToken()
+{
+    $user = loginUser(1);
+
+    $user = $user->church_admin ? $user : loginUser(1);
+
+    return $user->churchToken ?? null;
+}

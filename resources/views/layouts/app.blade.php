@@ -233,6 +233,7 @@
         /* hide the page untill #loadingg */
     </style>
     @yield('css')
+    @stack('style')
 </head>
 
 <body>
@@ -418,7 +419,7 @@
             setTimeout(function() {
                 $('#maps').show();
             }, 2000);
-            
+
         }
     </script>
     @yield('js')

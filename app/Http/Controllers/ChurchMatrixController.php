@@ -20,8 +20,8 @@ class ChurchMatrixController extends Controller
 
     public function index()
     {
-        $settings = CrmToken::where(['user_id' => login_id(), 'crm_type' => 'church'])->first();
-        $regions =  $this->service->fetchRegions() ?? null;
+        $settings = getChurchToken();
+        $regions =  $settings ? $this->service->fetchRegions($settings) : null;
 
         return view('admin.church_matrix.index', compact('settings', 'regions'));
     }
