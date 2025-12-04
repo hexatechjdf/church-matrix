@@ -132,20 +132,19 @@
 
     }
 
-function editServiceTime(time) {
-
-    console.log("EDIT SERVICE TIME:", time);
-
+function editServiceTime(serviceTime) {
     $('#editServiceTimeModal').modal('show');
 
-    $('#edit_id').val(time.id);
-    $('#edit_day_of_week').val(time.day_of_week);
-    $('#edit_time_of_day').val(time.time_of_day);
-    $('#edit_date_start').val(time.date_start);
-    $('#edit_date_end').val(time.date_end);
-    $('#edit_event_id').val(time.event?.id ?? "");
+    $('#edit_id').val(serviceTime.id);
+    $('#edit_campus_id').val(serviceTime.campus_id || 137882); 
+    $('#edit_day_of_week').val(serviceTime.day_of_week);
+    $('#edit_time_of_day').val(serviceTime.time_of_day);
+    $('#edit_date_start').val(serviceTime.date_start);
+    $('#edit_date_end').val(serviceTime.date_end);
+    $('#edit_event_id').val(serviceTime.event?.id || '');
 
-    let url = `/locations/churchmatrix/service-times/${time.id}`;
+    let url = "{{ route('locations.churchmatrix.service-times.update', ':id') }}";
+    url = url.replace(':id', serviceTime.cm_id || serviceTime.id);
     $('#editServiceTimeForm').attr('action', url);
 }
 

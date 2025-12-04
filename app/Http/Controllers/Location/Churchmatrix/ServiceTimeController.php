@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Location\Churchmatrix;
 
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreServiceTimeRequest;
 use App\Models\ServiceTime;
 use App\Services\ServiceTimeService;
 use Illuminate\Http\Request;
@@ -47,10 +46,12 @@ class ServiceTimeController extends Controller
             'message' => $result['message'] ?? 'Failed to create service time.'
         ], 500);
     }
+   
 
-   public function update(Request $request, ServiceTime $serviceTime)
+    public function update(Request $request, $id)
 {
-    // Validation (same create style)
+    $cm_id = $id;
+
     $data = $request->only([
         'campus_id',
         'day_of_week',
@@ -63,30 +64,19 @@ class ServiceTimeController extends Controller
         'event_id',
     ]);
 
-    if (!$serviceTime->cm_id) {
-        return response()->json([
-            'success' => false,
-            'message' => 'This service time is not synced with ChurchMetrics.',
-        ], 400);
-    }
+    $result = $this->service->updateServiceTimeOnAPI($cm_id, $data);
 
-    $updated = $this->service->updateServiceTimeOnAPI($serviceTime->cm_id, $data);
-
-    if ($updated) {
+    if ($result['success'] ?? false) {
         return response()->json([
             'success' => true,
-            'message' => 'Service time updated successfully!',
-            'service_time' => array_merge($data, [
-                'id' => $serviceTime->id,
-                'cm_id' => $serviceTime->cm_id,
-            ]),
+            'service_time' => $result['service_time'] ?? (object) $data,
+            'message'    => 'Service Time updated successfully!'
         ]);
     }
 
     return response()->json([
         'success' => false,
-        'message' => 'Failed to update service time on ChurchMetrics.'
-    ], 500);
+        'message' => $result['message'] ?? 'Failed to update on ChurchMatrix.'
+    ], 422);
 }
-
 }
