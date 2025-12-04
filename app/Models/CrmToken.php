@@ -20,4 +20,8 @@ class CrmToken extends Model
     //     }
     //     return $is_refresh;
     // }
+
+    public function user(){
+        return $this->belongsTo(User::class,'user_id');
+    }
 }

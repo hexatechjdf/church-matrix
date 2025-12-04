@@ -50,7 +50,20 @@ class User extends Authenticatable
 
     public function crmtoken()
     {
-        return $this->hasOne(CrmToken::class, 'user_id');
+        return $this->hasOne(CrmToken::class, 'user_id')
+                    ->where('crm_type', 'ghl');
+    }
+
+    public function planningToken()
+    {
+        return $this->hasOne(CrmToken::class, 'user_id')
+                    ->where('crm_type', 'planning');
+    }
+
+    public function churchToken()
+    {
+        return $this->hasOne(CrmToken::class, 'user_id')
+                    ->where('crm_type', 'church');
     }
 
 }

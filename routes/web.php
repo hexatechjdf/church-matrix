@@ -142,15 +142,15 @@ Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
 
 // Planning Center Connection Routes
 Route::prefix('planning-center')->name('planningcenter.')->group(function () {
-    $controller = PlanningCenterController::class;
+    $controller = PlanningController::class;
     Route::get('/callback', [$controller, 'callback'])->name('callback');
 });
 
 
 // Testing Routes
-Route::get('/get-people', [PlanningCenterController::class, 'getContact'])->name('contacts');
+Route::get('/get-people', [PlanningController::class, 'getContact'])->name('contacts');
 
-Route::get('/post-people', [PlanningCenterController::class, 'capturelead'])->name('capturelead');
+// Route::get('/post-people', [PlanningCenterController::class, 'capturelead'])->name('capturelead');
 
 
 // Route::get('/test', function () {
@@ -169,7 +169,6 @@ Route::prefix('locations')->name('locations.')->group(function () {
         $controller = IndexController::class;
         Route::get('/', [$controller, 'index'])->name('index');
 
-
         Route::prefix('setting-intergration')->name('setting-intergration.')->group(function () {
             Route::get('/', [SettingIntergration::class, 'index'])->name('index');
         });
@@ -178,8 +177,6 @@ Route::prefix('locations')->name('locations.')->group(function () {
             Route::post('/timezone', [TimeZoneController::class, 'saveTimezone'])->name('timezone.save');
         });
 
-
-
         Route::prefix('events')->name('events.')->group(function () {
             Route::get('/', [ChurchEventController::class, 'index'])->name('index');
             Route::post('/store', [ChurchEventController::class, 'store'])->name('store');
@@ -187,27 +184,29 @@ Route::prefix('locations')->name('locations.')->group(function () {
             Route::delete('/{id}', [ChurchEventController::class, 'destroy'])->name('destroy');
         });
 
-
-
         Route::prefix('service-times')->name('service-times.')->group(function () {
             Route::get('/', [ServiceTimeController::class, 'index'])->name('index');
             Route::post('/store', [ServiceTimeController::class, 'store'])->name('store');
             Route::put('/{serviceTime}', [ServiceTimeController::class, 'update'])->name('update');
         });
 
-
         Route::prefix('records')->name('records.')->group(function () {
             Route::get('/', [RecordController::class, 'index'])->name('index');
             Route::get('/create', [RecordController::class, 'create'])->name('create');
             Route::post('/store', [RecordController::class, 'store'])->name('store');
         });
+    });
 
-        Route::prefix('planningcenter')->name('planningcenter.')->group(function () {
-            $c = PlanningController::class;
-            Route::get('/', [$c, 'index'])->name('index');
-            Route::get('/get/settings', [$c, 'getPlanningSettings'])->name('get.settings');
-            Route::get('/headcounts/visualization', [$c, 'headCountGraphs'])->name('headcount.visuals');
-        });
+    Route::prefix('planningcenter')->name('planningcenter.')->group(function () {
+        $c = PlanningController::class;
+        Route::get('/', [$c, 'index'])->name('index');
+        Route::get('/get/settings', [$c, 'getPlanningSettings'])->name('get.settings');
+        Route::get('workflow/saved', [$c, 'saveWorkflow'])->name('saveWorkflow');
+        Route::get('listworkflows', [$c, 'listworkflows'])->name('listworkflows');
+        Route::get('disconnectplanning', [$c, 'disconnectplanning'])->name('disconnectplanning');
+
+
+        Route::get('/headcounts/visualization', [$c, 'headCountGraphs'])->name('headcount.visuals');
     });
 });
 
@@ -218,10 +217,8 @@ Route::get('check/auth', [AutoAuthController::class, 'connect'])->name('auth.che
 // Route::get('check/auth', [DashboardController::class, 'authCheck'])->name('auth.check');
 Route::get('checking/auth', [AutoAuthController::class, 'authChecking'])->name('auth.checking');
 // Route::get('checking/auth', [DashboardController::class, 'authChecking'])->name('auth.checking');
-Route::get('workflow/saved', [DashboardController::class, 'saveWorkflow'])->name('auth.saveWorkflow');
+
 Route::get('planning', [DashboardController::class, 'planning'])->name('auth.planning');
-Route::get('disconnectplanning', [DashboardController::class, 'disconnectplanning'])->name('auth.disconnectplanning');
-Route::get('listworkflows', [DashboardController::class, 'listworkflows'])->name('auth.listworkflows');
 
 
 // Route::get('check/auth', [AutoAuthController::class, 'connect'])->name('auth.check');
@@ -255,3 +252,21 @@ Route::get('/tokens_renew', function () {
 //     }
 //     return "Sync completed!";
 // });
+
+use App\Services\planningService;
+use App\Models\CrmToken;
+
+
+Route::get('/get-head-counts', function(PlanningService $service){
+   $t = CrmToken::where('id', 7)->first();
+   $planning = @$t->access_token;
+
+   $request = new Request();
+    $request->merge([
+        'user_id' => 886,
+        // agar aur fields chahiye to yahan add kar dein
+    ]);
+   $w = $service->planning_api_call('check-ins/v2/event_times', 'get', '', [], false, $planning);
+
+   dd($w);
+});

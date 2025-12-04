@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddColumnsToCrmTokensTable extends Migration
+class AddSelectedWorkflowColumnToUsersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class AddColumnsToCrmTokensTable extends Migration
      */
     public function up()
     {
-        Schema::table('crm_tokens', function (Blueprint $table) {
-            $table->string('crm_type', 190)->default('ghl');
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('workflow_selected')->nullable();
         });
     }
 
@@ -25,8 +25,8 @@ class AddColumnsToCrmTokensTable extends Migration
      */
     public function down()
     {
-        Schema::table('crm_tokens', function (Blueprint $table) {
-            $table->dropColumn(['crm_type']);
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn(['workflow_selected']);
         });
     }
 }

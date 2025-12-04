@@ -109,11 +109,10 @@
                 url: url,
                 type: 'GET',
                 success: function(data) {
-
                     toastr.success("Fetched successfully!");
+                    console.log(data);
                     mainusertoken = data.token;
                     userjwt = data.jwt;
-
 
                     $('.planningcenterbtn.connect').attr('data-href', data.planning_href);
 
@@ -149,7 +148,7 @@
         }
 
         function getWorkflows() {
-            var url = "{{ route('auth.listworkflows') }}";
+            var url = "{{ route('locations.planningcenter.listworkflows') }}";
             $.ajax({
                 url: url,
                 type: 'GET',
@@ -182,7 +181,7 @@
         let userjwt = '';
 
         function workflowchanged(value) {
-            var url = "{{ route('auth.saveWorkflow') }}";
+            var url = "{{ route('locations.planningcenter.saveWorkflow') }}";
             $.ajax({
                 url: url,
                 type: 'GET',
@@ -209,7 +208,7 @@
 
         function disconnectplanning(e) {
 
-            var url = "{{ route('auth.disconnectplanning') }}";
+            var url = "{{ route('locations.planningcenter.disconnectplanning') }}";
             $.ajax({
                 url: url,
                 type: 'GET',

@@ -68,72 +68,11 @@ class DashboardController extends Controller
         return view('auth-check');
     }
 
-    public function saveWorkflow(Request $req)
-    {
-         try{
-            $req->token = decrypt( $req->token) ;  
-        }catch(\Exception $e){
-            return 'unsaved or refresh the page';
-        }
-        $user = User::find($req->token);
-        if ($user) {
-            save_setting('workflow_selected', $req->workflow_id, $user->id);
-            return 'saved';
-        }
-        return 'unsaved';
-    }
 
-    public function listworkflows(Request $req)
-    {
-        try{
-            $req->token = decrypt( $req->token) ;  
-        }catch(\Exception $e){
-            return 'unsaved or refresh the page';
-        }
-        $user = User::find($req->token);
-        $res = new \stdClass;
-       
-        if ($user) {
-            request()->user_id=$user->id;
-            request()->location=$user->location;
-            $planning = get_setting($user->id, 'planning_access_token');
-          
-            if ($planning) {
-                $workflows = planning_api_call('people/v2/workflows', 'get', '', [], false, $planning);
-                
-               
-                
-                $res->organization_id = get_setting($user->id, 'planning_organization_id');
-                $res->organization_name = get_setting($user->id, 'planning_organization_name');
-                
-                
 
-                $res->workflow_selected = get_setting($user->id, 'workflow_selected');
-               
-                //$workflows= json_decode($workflows);
-                $res->workflows = $workflows;
-            }
-        }
-        return response()->json($res);
-    }
 
-    public function disconnectplanning(Request $req)
-    {
-        try{
-            $req->token = decrypt( $req->token) ;  
-        }catch(\Exception $e){
-            return 'unsaved or refresh the page';
-        }
-        $user = User::find($req->token);
-        if ($user) {
-            $ui = $user->id;
-            save_setting('planning_access_token', null, $ui);
-            save_setting('planning_refresh_token', null,  $ui);
-            save_setting('planning_organization_id', null, $ui);
-            return 'saved';
-        }
-        return 'unsaved';
-    }
+
+
 
     public function handleAuth($req,$res,$locurl){
          $client = new Client(['http_errors' => false]);
@@ -145,17 +84,17 @@ class DashboardController extends Controller
                     $red =  $res1->getBody()->getContents();
                     $red = json_decode($red);
 
-                   
+
                     if ($red && property_exists($red, 'redirectUrl')) {
                         // @file_get_contents($red->redirectUrl);
                         $url = $red->redirectUrl;
                         $parts = parse_url($url);
                         parse_str($parts['query'], $query);
                         $code = $query['code'];
-                        
+
                         $res->crm_connected  = ghl_token($code, '1', 'eee');
-                       
-                        
+
+
                     }
                     return $res;
     }
@@ -163,7 +102,7 @@ class DashboardController extends Controller
     public function authChecking(Request $req)
     {
 
-        
+
         if ($req->ajax()) {
             //save_logs(json_encode($req->all()));
             if ($req->has('location') && $req->has('token')) {
@@ -179,7 +118,7 @@ class DashboardController extends Controller
                     $user->ghl_api_key = $req->token;
                     $user->role = 1;
                     $user->save();
-                    
+
                 }
                 $user->ghl_api_key = $req->token;
                 $user->save();
@@ -188,11 +127,11 @@ class DashboardController extends Controller
                 request()->user_id = $user->id;
                 request()->location_id = $user->location;
                 session()->put('uid', $user->id);
-                    
-                // $planning_client_id=get_setting('1','planning_client_id');   
+
+                // $planning_client_id=get_setting('1','planning_client_id');
                 // $crm_client_id=get_setting('1','crm_client_id');
-              
-                
+
+
                 $res = new \stdClass;
                 $res->jwt= encrypt($user->id);
                 $res->user_id = $user->id;
@@ -204,34 +143,34 @@ class DashboardController extends Controller
                 $callbackurl = route('crm.callback');
                 $locurl = "https://services.msgsndr.com/oauth/authorize?location_id=" . $res->location_id . "&response_type=code&userType=Location&redirect_uri=" . $callbackurl . "&client_id=" . getAccessToken('crm_client_id') . "&scope=calendars.readonly campaigns.readonly contacts.write contacts.readonly locations.readonly calendars/events.readonly locations/customFields.readonly locations/customValues.write opportunities.readonly calendars/events.write opportunities.write users.readonly users.write locations/customFields.write";
 
-                  
 
-                session()->put('is_login_res',$res); 
+
+                session()->put('is_login_res',$res);
                 $ch = Setting::where('location_id', $user->id)->first();
                 if ($ch) {
                     $token = get_setting($user->id, 'ghl_refresh_token');
-                  
+
                      if ($token) {
-                   
+
                     $res->crm_connected = ghl_token($token, '1', 'eee');
                     if(!$res->crm_connected){
                         $res->crm_connected  = ConnectOauth($res->location_id,$req->token);
                     }
-                   
-                    
+
+
                 } else {
-                    
-                     
+
+
                      $res->crm_connected  = ConnectOauth($res->location_id,$req->token);
                 }
-                
+
                    $res->is_crm = $res->crm_connected;
-                   
-                    
+
+
                     $planning = get_setting($user->id, 'planning_access_token');
-                    
+
                     if (!empty($planning)) {
-                          
+
                         $workflows = planning_api_call('people/v2/workflows', 'get', '', [], false, $planning);
                        if($user->id==105){
                         //dd($workflows);
@@ -246,7 +185,7 @@ class DashboardController extends Controller
                     }
                 }
 
-                
+
 
 
                 // return response()->json($res);

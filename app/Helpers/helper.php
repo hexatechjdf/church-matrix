@@ -36,8 +36,12 @@ function supersetting($key, $default = '', $keys_contain = null)
 
 }
 
-function loginUser()
+function loginUser($id=null)
 {
+    if($id)
+    {
+        return User::where('id',$id)->first();
+    }
     return auth()->user();
 }
 
@@ -88,7 +92,6 @@ function save_setting($key, $value = '', $id = null)
 }
 
 
-
 function get_setting($id, $type)
 {
     $res = Setting::where(['location_id' => $id,  'key' => $type])->first();
@@ -107,7 +110,7 @@ function getAccessToken($type)
 }
 
 // Planning Center Oauth Config
-function get_planning_token($code, $type = "")
+function _get_planning_token($code, $type = "")
 {
     $url = 'https://api.planningcenteronline.com/oauth/token';
     $headers['Content-Type'] = "application/json";
@@ -139,8 +142,166 @@ function get_planning_token($code, $type = "")
 }
 
 
+function __ghl_api_call($url = '', $method = 'get', $data = '', $headers = [], $json = false, $is_v2 = true)
+{
+
+    $baseurl = 'https://rest.gohighlevel.com/v1/';
+    $bearer = 'Bearer ';
+    // if (get_default_settings('oauth_ghl', 'api') != 'oauth') {
+    //     $token = company_user()->ghl_api_key;
+
+    // } else {
+    $user_id=request()->user_id;
+    $token = get_setting($user_id, 'ghl_access_token');
+    // dd($token);
+    if (empty($token)) {
+        if (session('cronjob')) {
+            return false;
+        }
+        return 'token not found';
+    }
+    $baseurl = 'https://services.leadconnectorhq.com/';
+    $version = get_default_settings('oauth_ghl_version', '2021-04-15');
+    $location = get_setting($user_id, 'ghl_location_id');
+    $headers['Version'] = $version;
+    if ($method == 'get' || $method == 'GET') {
+        $url .= (strpos($url, '?') !== false) ? '&' : '?';
+        if (strpos($url, 'location_id=') === false && strpos($url, 'locationId=') === false) {
+            $url .= 'locationId=' . $location;
+        }
+    }
+    if (strpos($url, 'custom') !== false && strpos($url, 'locations/') !== false) {
+        $url = 'locations/' . $location . '/' . $url;
+    }
+
+    if ($token) {
+        $headers['Authorization'] =  $bearer . $token;
+    }
+    $headers['Content-Type'] = "application/json";
+    $client = new \GuzzleHttp\Client(['http_errors' => false, 'headers' => $headers]);
+    // dd($client);
+    $options = [];
+    if (!empty($data)) {
+        $options['body'] = $data;
+        // saveLogger('ghl_data', json_encode($data));
+        // dd($data);
+    }
+
+    $url1 = $baseurl . $url;
+
+    $response = $client->request($method, $url1, $options);
+
+    $bd = $response->getBody()->getContents();
+
+    $bd = json_decode($bd);
+
+    if (isset($bd->error) && strtolower($bd->error) == 'unauthorized') {
+
+        $code  = get_setting($user_id, 'ghl_refresh_token');
+
+
+
+
+        if (strpos(strtolower($bd->message),'authclass')===false) {
+            $lck=Cache::lock('crm_cache_lock_'.$user_id,40);
+        $is_refresh=false;
+            try{
+            list($is_refresh,$a_token)= $lck->block(40, function () use ($user_id,$code) {
+    $newrefresh_token = get_setting($user_id, 'ghl_refresh_token');
+    if($newrefresh_token==''){
+        return false;
+    }
+
+    if($code!=$newrefresh_token){
+        return true;
+    }
+    return $tok = ghl_token($code, '1','2');
+
+    });
+
+
+    if($is_refresh){
+               sleep(1);
+                return ghl_api_call($url, $method, $data, $headers, $json, $is_v2);
+            }
+        }catch(\Exception $e){
+
+        }
+
+        }
+
+
+
+
+
+function __ghl_token($code, $type = '', $method = 'view')
+{
+
+    $code  =  ghl_oauth_call($code, $type);
+
+    if ($code) {
+        if (property_exists($code, 'access_token')) {
+            $u = User::where('location', $code->locationId)->first();
+            if (!$u) {
+                if($method=='view'){
+                     abort(redirect()->route('auth.check'));
+                }
+                else{
+                    return null;
+                }
+            }
+            $ui = null;
+            if ($u) {
+                $ui = $u->id;
+            }
+            session()->put('ghl_api_token', $code->access_token);
+            session()->put('ghl_location_id', $code->locationId);
+
+            save_setting('ghl_access_token', $code->access_token, $ui);
+            save_setting('ghl_refresh_token', $code->refresh_token, $ui);
+            save_setting('ghl_location_id', $code->locationId??"", $ui);
+            save_setting('ghl_company_id', $code->companyId??"", $ui);
+            save_setting('ghl_user_type', $code->userType??"", $ui);
+            if ($method == 'view') {
+                abort(redirect()->route('auth.check')->with('success', "connected"));
+            } else {
+                return true;
+            }
+        } else {
+            if (property_exists($code, 'error_description')) {
+                if (empty($type)) {
+                    if ($method == 'view') {
+                        abort(redirect()->route('auth.check')->with('error', $code->error_description));
+                    }
+                    //return false;
+                }
+            }
+            //return null;
+        }
+    }
+    // if (empty($type)) {
+    //     abort(redirect()->route('dashboard')->with('error', 'Server error'));
+    // }
+    return null;
+}
+
+
+
+
+
+
+
+        if (session('cronjob')) {
+            return false;
+        }
+
+    }
+    return $bd;
+}
+
+
 // Planning Center Call
-function planning_api_call($url = '', $method = 'get', $data = '', $headers = [], $json = false, $a_token = null)
+function _planning_api_call($url = '', $method = 'get', $data = '', $headers = [], $json = false, $a_token = null)
 {
     $type = 'planning_access_token';
     $baseurl = 'https://api.planningcenteronline.com/';
@@ -309,7 +470,7 @@ function api_call($url)
 }
 
 // Renew token cron job
-function tokens_renew()
+function _tokens_renew()
 {
        @ini_set('max_execution_time', 0);
          @set_time_limit(0);
