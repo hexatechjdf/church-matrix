@@ -21,7 +21,31 @@
         </div>
     </div>
 
-    <div class="row">
+    @include('components.church-matrix-keys', ['admin' => true])
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-header text-white" style="background-color: #E9F0F0;">
+            <h5 class="mb-0"><i class="fas fa-table mr-2"></i>Saved API & Location Data</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>#</th>
+                            <th>User Email</th>
+                            <th>Location ID</th>
+                            <th>API Key</th>
+                            <th>Region</th>
+                        </tr>
+                    </thead>
+
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- <div class="row">
         <div class="col-lg-10 mx-auto">
             <div class="row">
                 <div class="col-md-6">
@@ -138,31 +162,7 @@
                                     <th>Region</th>
                                 </tr>
                             </thead>
-                            {{-- <tbody>
-                            @forelse($allSettings as $key => $setting)
-                            <tr>
-                                <td>{{ $key + 1 }}</td>
-                                <td>{{ $setting->church_matrix_user }}</td>
-                                <td>{{ $setting->location_id ?? '-' }}</td>
-                                <td>{{ $setting->church_matrix_api }}</td>
-                                <td>
-                                    @php
-                                    $regionName = '-';
-                                    if(isset($setting->select_region) && $regions) {
-                                    foreach($regions as $region) {
-                                    if($region['id'] == $setting->select_region) {
-                                    $regionName = $region['name'];
-                                    break;  } }}
-                                    @endphp
-                                    {{ $regionName }}
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="5" class="text-center">No data found.</td>
-                            </tr>
-                            @endforelse
-                        </tbody> --}}
+
                         </table>
                     </div>
                 </div>
@@ -170,5 +170,5 @@
 
 
         </div>
-    </div>
+    </div> --}}
 @endsection

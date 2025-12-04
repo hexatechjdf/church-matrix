@@ -233,6 +233,7 @@
         /* hide the page untill #loadingg */
     </style>
     @stack('css')
+    @stack('style')
 </head>
 
 <body>
@@ -242,7 +243,7 @@
         <img id="loading-image" src="{{ asset('assets/images/Blinking squares.gif') }}" alt="Loading..." />
     </div>
     <div id="remove-overlay" class="loading-overlay"></div>
-    
+
 
     <!-- Top Bar End -->
     <div class="page-wrapper">
@@ -406,7 +407,7 @@
             setTimeout(function() {
                 $('#maps').show();
             }, 2000);
-            
+
         }
     </script>
     @stack('js')

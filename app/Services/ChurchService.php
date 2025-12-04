@@ -21,9 +21,9 @@ class ChurchService
         ]);
     }
 
-    public function fetchRegions()
+    public function fetchRegions($crm)
     {
-        return $this->request('GET', 'regions.json');
+        return $this->request('GET', 'regions.json',[],false,$crm);
     }
 
     public function saveChurchSetting(int $regionId)
@@ -42,13 +42,15 @@ class ChurchService
         ]);
     }
 
-   public function request($method, $url, $data = [],$header_required = false)
+   public function request($method, $url, $data = [],$header_required = false,$crm = null)
     {
         $baseurl = 'https://churchmetrics.com/api/v1/';
         $endpoint = $baseurl . $url;
 
-        $auth_key = '2b98fda4b8c22b26d7da69d816bf3ae7';
-        $auth_user = 'radiwa6602@dwakm.com';
+        $crm = $crm ?? getChurchToken();
+
+        $auth_key = $crm->refresh_token ?? '2b98fda4b8c22b26d7da69d816bf3ae7';
+        $auth_user = $crm->access_token ?? 'radiwa6602@dwakm.com';
         try {
             $client = Http::withHeaders([
                 'X-Auth-User' => $auth_user,

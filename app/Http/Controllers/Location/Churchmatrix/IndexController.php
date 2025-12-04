@@ -4,11 +4,19 @@ namespace App\Http\Controllers\Location\Churchmatrix;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Services\ChurchService;
 use DateTimeZone;
 use DateTime;
 
 class IndexController extends Controller
 {
+    protected $service;
+
+    public function __construct(ChurchService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index(Request $request)
     {
         $user = loginUser();
@@ -22,6 +30,9 @@ class IndexController extends Controller
             $sign = ($offset >= 0) ? '+' : '-';
             $timezones[$tz] = sprintf('(GMT%s%02d:%02d) %s', $sign, abs($hours), $minutes, $tz);
         }
+
+        $settings = getChurchToken();
+        $regions =  $settings ? $this->service->fetchRegions($settings) : null;
 
         return view('locations.churchmatrix.index',get_defined_vars());
     }
