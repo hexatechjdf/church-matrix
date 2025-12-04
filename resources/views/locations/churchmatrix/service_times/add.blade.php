@@ -83,6 +83,7 @@
     // });
 
     function prependServiceTimeRow(serviceTime) {
+        // Optionally remove temp row if using temporary IDs
         $(`tr[data-temp-id="${serviceTime.id}"]`).remove();
 
         const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];

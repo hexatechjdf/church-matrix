@@ -69,76 +69,46 @@
 </div>
 
 
+
 @push('js')
 <script>
-    function editEvent(id, name) {
 
-        $('#editEventModal').modal('show');
-        $('#edit_event_id').val(id);
-        $('#edit_event_name').val(name);
-
-        let url = "{{ route('locations.churchmatrix.events.update', ':id') }}".replace(':id', id);
-        $('#editEventForm').attr('action', url);
-    }
-
-   $(document).on('submit', '#editServiceTimeForm', function(e) {
+  $('#editServiceTimeForm').submit(function(e) {
     e.preventDefault();
 
-    let form = this;
-    let formData = new FormData(form);
-
-    formData.append('_token', $('input[name="_token"]').val());
-    formData.append('_method', 'PUT');
-
-    let $submitBtn = $(form).find('button[type="submit"]');
-    let originalText = $submitBtn.html();
-    $submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Updating...').prop('disabled', true);
+    let form = $(this);
+    let url = form.attr('action');
 
     $.ajax({
-        url: form.action,
-        method: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-
+        url: url,
+        type: "POST",
+        data: form.serialize(),
         success: function(res) {
+
             if (res.success) {
-
                 $('#editServiceTimeModal').modal('hide');
-
-                let row = document.querySelector(`tr[data-service-time-id="${res.time.id}"]`);
-                if (row) {
-                    row.children[2].textContent = res.time.day_text;
-                    row.children[3].textContent = res.time.time_formatted;
-                    row.children[6].textContent = res.time.date_start;
-                    row.children[7].textContent = res.time.date_end;
-                    row.children[9].textContent = res.time.event_name ?? "N/A";
-                }
 
                 Toast.fire({
                     icon: 'success',
-                    title: res.message || 'Service Time updated successfully!'
+                    title: res.message || 'Service Time Updated!'
                 });
 
-                form.reset();
-                form.action = "";
+                // Reload or update row...
+                location.reload(); // easiest
+            } else {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Update failed!'
+                });
             }
         },
-
         error: function(xhr) {
-            let msg = xhr.responseJSON?.message || 'Something went wrong!';
-            Toast.fire({ icon: 'error', title: msg });
-        },
-
-        complete: function() {
-            $submitBtn.html(originalText).prop('disabled', false);
+            Toast.fire({
+                icon: 'error',
+                title: xhr.responseJSON?.message || 'Something went wrong!'
+            });
         }
     });
-});
-
-
-$('#editServiceTimeModal').on('hidden.bs.modal', function() {
-    $(this).find('form')[0].reset();
 });
 
 </script>
