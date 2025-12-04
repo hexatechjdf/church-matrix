@@ -1,22 +1,19 @@
-<div class="row">
-    <div class="col-sm-12">
-        <div class="page-title-box">
-            <h4 class="page-title">Setting Integration</h4>
+ <div class="col-md-12 text-left mt-4">
 
-            <div class="col-md-12 text-left mt-4">
+                <a href="{{ route('locations.churchmatrix.index') }}"
+                    class="btn btn-gradient-success px-4 mt-0 mb-3 import-users {{ request()->routeIs('locations.churchmatrix.index') ? 'active-tab' : '' }}">
+                    <i class="mdi mdi-plus-circle-outline mr-2"></i>Setting
+                </a>
 
-                <a href="{{ route('settings.timezone') }}" 
-                   class="btn btn-gradient-success px-4 mt-0 mb-3 import-users {{ request()->routeIs('settings.timezone') ? 'active-tab' : '' }}">
-                    <i class="mdi mdi-plus-circle-outline mr-2"></i>Setting</a>
+                {{-- <a href=""
+                    class="btn btn-gradient-primary px-4 mt-0 mb-3">
+                    <i class="mdi mdi-plus-circle-outline mr-2"></i>Integration</a> --}}
 
-                <a href="{{ route('setting-intergration.index') }}" 
-                   class="btn btn-gradient-primary px-4 mt-0 mb-3 {{ request()->routeIs('setting-intergration.*') ? 'active-tab' : '' }}">
+
+                <a href="{{ route('locations.churchmatrix.setting-intergration.index') }}"
+                    class="btn btn-gradient-primary px-4 mt-0 mb-3 {{ request()->routeIs('locations.churchmatrix.setting-intergration.index*') ? 'active-tab' : '' }}">
                     <i class="mdi mdi-plus-circle-outline mr-2"></i>Integration</a>
             </div>
-
-        </div>
-    </div>
-</div>
 
 <style>
     .btn.active-tab {
@@ -63,6 +60,7 @@
             width: 0;
             opacity: 0;
         }
+
         to {
             width: 60%;
             opacity: 1;
@@ -74,9 +72,11 @@
             transform: scale(0);
             opacity: 0;
         }
+
         50% {
             transform: scale(1.2);
         }
+
         100% {
             transform: scale(1);
             opacity: 1;

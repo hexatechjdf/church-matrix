@@ -10,7 +10,7 @@
                 </button>
             </div>
 
-            <form action="{{ route('events.store') }}" method="POST">
+            <form action="" method="POST">
                 @csrf
 
                 <div class="modal-body">

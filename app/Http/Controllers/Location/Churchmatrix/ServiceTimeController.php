@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Location\Churchmatrix;
 
+
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreServiceTimeRequest;
 use App\Models\ServiceTime;
 use App\Services\ServiceTimeService;
@@ -16,34 +18,75 @@ class ServiceTimeController extends Controller
         $this->service = $service;
     }
 
-    public function store(StoreServiceTimeRequest $request)
+    public function store(Request $request)
     {
-        $cm_id = $this->service->createServiceTimeToAPI($request->validated());
-
-        $serviceTime = ServiceTime::create([
-            'cm_id' => $cm_id,
-            'campus_id' => $request->campus_id,
-            'day_of_week' => $request->day_of_week,
-            'time_of_day' => $request->time_of_day,
-            'timezone' => $request->timezone,
-            'relation_to_sunday' => $request->relation_to_sunday,
-            'date_start' => $request->date_start,
-            'date_end' => $request->date_end,
-            'replaces' => $request->replaces,
-            'event_id' => $request->event_id,
+        $data = $request->only([
+            'campus_id',
+            'day_of_week',
+            'time_of_day',
+            'timezone',
+            'relation_to_sunday',
+            'date_start',
+            'date_end',
+            'replaces',
+            'event_id',
         ]);
 
-        return redirect()->back()->with('success', 'Service Time created successfully!');
-    }
+        $result = $this->service->create($data);
 
-  public function update(StoreServiceTimeRequest $request, ServiceTime $serviceTime)
-    {
-        $serviceTime->update($request->validated());
-
-        if ($serviceTime->cm_id) {
-            $this->service->updateServiceTimeOnAPI($serviceTime->cm_id, $request->validated());
+        if ($result['success']) {
+            return response()->json([
+                'success' => true,
+                'service_time' => $result['service_time'],
+                'message' => 'Service time created successfully!'
+            ]);
         }
 
-        return back()->with('success', 'Service Time updated successfully!');
+        return response()->json([
+            'success' => false,
+            'message' => $result['message'] ?? 'Failed to create service time.'
+        ], 500);
     }
+
+   public function update(Request $request, ServiceTime $serviceTime)
+{
+    // Validation (same create style)
+    $data = $request->only([
+        'campus_id',
+        'day_of_week',
+        'time_of_day',
+        'timezone',
+        'relation_to_sunday',
+        'date_start',
+        'date_end',
+        'replaces',
+        'event_id',
+    ]);
+
+    if (!$serviceTime->cm_id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This service time is not synced with ChurchMetrics.',
+        ], 400);
+    }
+
+    $updated = $this->service->updateServiceTimeOnAPI($serviceTime->cm_id, $data);
+
+    if ($updated) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Service time updated successfully!',
+            'service_time' => array_merge($data, [
+                'id' => $serviceTime->id,
+                'cm_id' => $serviceTime->cm_id,
+            ]),
+        ]);
+    }
+
+    return response()->json([
+        'success' => false,
+        'message' => 'Failed to update service time on ChurchMetrics.'
+    ], 500);
+}
+
 }

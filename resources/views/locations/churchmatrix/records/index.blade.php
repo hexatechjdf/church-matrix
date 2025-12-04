@@ -88,4 +88,4 @@
     </div>
 </div>
 
-@include('records.add')
+@include('locations.churchmatrix.records.add')

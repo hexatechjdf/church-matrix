@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Location\Churchmatrix;
 
+
+use App\Http\Controllers\Controller;
 use App\Models\ChurchEvent;
 use App\Services\ChurchEventService;
 use Illuminate\Http\Request;
@@ -21,14 +23,22 @@ class ChurchEventController extends Controller
             'name' => 'required|string|max:255'
         ]);
 
-        $cm_id = $this->service->createEventToAPI($request->name);
+        $res = $this->service->createEventToAPI($request->name);
 
-        $event = ChurchEvent::create([
-            'name' => $request->name,
-            'cm_id' => $cm_id
-        ]);
+        // dd($cm_id);
 
-        return redirect()->back()->with('success', 'Event created successfully!');
+        if ($res) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Event created on Church Metrics!',
+                'event' => $res
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create event on Church Metrics.'
+        ], 500);
     }
 
     public function update(Request $request, $id)
@@ -37,29 +47,35 @@ class ChurchEventController extends Controller
             'name' => 'required|string|max:255'
         ]);
 
-        $event = ChurchEvent::findOrFail($id);
+        $this->service->updateEventOnAPI($id, $request->name);
 
-        $event->update([
-            'name' => $request->name
+        return response()->json([
+            'success' => true,
+            'message' => 'Event updated successfully!',
+            'event' => [
+                'id' => $id,
+                'name' => $request->name,
+            ]
         ]);
-
-        if ($event->cm_id) {
-            $this->service->updateEventOnAPI($event->cm_id, $request->name);
-        }
-
-        return redirect()->back()->with('success', 'Event updated successfully!');
     }
 
-    public function destroy($id)
-    {
-        $event = ChurchEvent::findOrFail($id);
 
-        if ($event->cm_id) {
-            $this->service->deleteEventOnAPI($event->cm_id);
+
+    public function destroy($cm_id)
+    {
+        $success = $this->service->deleteEventOnAPI($cm_id);
+
+        if ($success) {
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Event permanently deleted from ChurchMetrics!'
+            ]);
         }
 
-        $event->delete();
-
-        return redirect()->back()->with('success', 'Event deleted successfully!');
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to delete from ChurchMetrics. Try again.'
+        ], 500);
     }
 }
