@@ -1,103 +1,253 @@
-@extends('layouts.app')
+<div class="container-fluid px-4 py-3">
 
-@section('title', 'Service time')
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1 text-dark fw-bold">
+                <i class="text-primary me-3"></i>Service Times
+            </h2>
+            <p class="text-muted mb-0">Manage all service times linked to events</p>
+        </div>
 
-@section('content')
-<div class="row">
-    <div class="col-sm-12">
-        <div class="page-title-box">
-            <div class="float-right">
-                <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#addEventModal">
-                    <i class="fas fa-plus"></i> Add Service time
-                </button>
+        <button class="btn btn-lg btn-primary shadow-lg rounded-pill px-4"
+                onclick="openAddServiceTimeModal()">
+            <i class="fas fa-plus me-2"></i>Add Service Time
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-lg rounded-4 overflow-hidden"
+         style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
+
+        <div class="card-header bg-gradient-primary text-white border-0 py-4">
+            <h4 class="mb-0 fw-bold">
+                <i class="me-3"></i>All Service Times ({{ $serviceTimes->count() }})
+            </h4>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 fw-bold text-dark">#</th>
+                            <th class="fw-bold text-dark">Campus</th>
+                            <th class="fw-bold text-dark">Day</th>
+                            <th class="fw-bold text-dark">Time</th>
+                            <th class="fw-bold text-dark">Timezone</th>
+                            <th class="fw-bold text-dark">Relation</th>
+                            <th class="fw-bold text-dark">Start Date</th>
+                            <th class="fw-bold text-dark">End Date</th>
+                            <th class="fw-bold text-dark">Replaces</th>
+                            <th class="fw-bold text-dark">Event</th>
+                            <th class="text-center fw-bold text-dark">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @php
+                            $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                        @endphp
+                        @forelse($serviceTimes as $time)
+                        <tr class="border-start border-4 border-primary">
+                            <td class="ps-4 fw-bold text-primary">{{ $loop->iteration }}</td>
+                            <td>{{ $time->campus['slug'] ?? $time->campus_id ?? 'N/A' }}</td>
+                            <td>{{ $days[$time->day_of_week] ?? $time->day_of_week }}</td>
+                            <td>{{ \Carbon\Carbon::parse($time->time_of_day)->format('h:i A') }}</td>
+                            <td>{{ $time->timezone }}</td>
+                            <td>{{ $time->relation_to_sunday ?? 'N/A' }}</td>
+                            <td>{{ $time->date_start ?? 'N/A' }}</td>
+                            <td>{{ $time->date_end ?? 'N/A' }}</td>
+                            <td>{{ $time->replaces ?? 'N/A' }}</td>
+                            <td>{{ $time->event->name ?? 'N/A' }}</td>
+                            <td class="text-center">
+          <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2"
+        onclick='editServiceTime(@json($time))'>
+    <i class="fas fa-edit"></i>
+</button>
+
+                                <button class="btn btn-sm btn-danger rounded-circle shadow-sm"
+                                        onclick="deleteServiceTime({{ $time->id }}, '{{ addslashes($time->event->name ?? '') }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="11" class="text-center py-5">
+                                <div>
+                                    <i class="fas fa-clock fa-5x text-muted mb-4 opacity-50"></i>
+                                    <h4 class="text-muted fw-light">No Service Times Found</h4>
+                                    <p class="text-muted">Add service times linked to events</p>
+                                    <button class="btn btn-outline-primary px-4" onclick="location.reload()">
+                                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-            <h4 class="page-title">Service times List</h4>
         </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header bg-info text-white">
-        <h5 class="mb-0">All Service times</h5>
-    </div>
+<div class="modal fade" id="serviceTimeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow-lg glass-effect">
 
-    <div class="card-body">
+            <div class="modal-header border-0 py-4 px-4 modal-gradient">
+                <h4 class="modal-title fw-bold d-flex align-items-center" id="serviceTimeModalTitle">
+                    <i class="fas fa-plus-circle me-3"></i>Add Service Time
+                </h4>
+                <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
+            </div>
 
-        @if (session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
-        @endif
+            <form id="serviceTimeForm" method="POST" action="{{ route('service-times.store') }}">
+                @csrf
+                @method('POST')
 
-        <table class="table table-bordered table-striped">
-    <thead class="thead-dark">
-        <tr>
-            <th>#</th>
-            <th>campus_id</th>
-            <th>day_of_week</th>
-            <th>time_of_day</th>
-            <th>timezone</th>
-            <th>relation_to_sunday</th>
-            <th>date_start</th>
-            <th>date_end</th>
-            <th>replaces</th>
-            <th>event_id</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>1</td>
-            <td>101</td>
-            <td>Monday</td>
-            <td>09:00 AM</td>
-            <td>PST</td>
-            <td>Before</td>
-            <td>2025-12-01</td>
-            <td>2025-12-01</td>
-            <td>None</td>
-            <td>E001</td>
-        </tr>
-        <tr>
-            <td>2</td>
-            <td>102</td>
-            <td>Wednesday</td>
-            <td>11:00 AM</td>
-            <td>EST</td>
-            <td>After</td>
-            <td>2025-12-03</td>
-            <td>2025-12-03</td>
-            <td>Old Event 1</td>
-            <td>E002</td>
-        </tr>
-        <tr>
-            <td>3</td>
-            <td>103</td>
-            <td>Friday</td>
-            <td>02:00 PM</td>
-            <td>CST</td>
-            <td>Same</td>
-            <td>2025-12-05</td>
-            <td>2025-12-05</td>
-            <td>Old Event 2</td>
-            <td>E003</td>
-        </tr>
-        <tr>
-            <td>4</td>
-            <td>104</td>
-            <td>Sunday</td>
-            <td>06:00 PM</td>
-            <td>MST</td>
-            <td>Before</td>
-            <td>2025-12-07</td>
-            <td>2025-12-07</td>
-            <td>None</td>
-            <td>E004</td>
-        </tr>
-    </tbody>
-</table>
+                <div class="modal-body px-5 py-4">
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">Campus ID <span class="text-danger">*</span></label>
+                        <input type="text" name="campus_id" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0" required>
+                    </div>
 
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">Day of Week <span class="text-danger">*</span></label>
+                        <select name="day_of_week" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0" required>
+                            @foreach($days as $index => $day)
+                                <option value="{{ $index }}">{{ $day }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">Time <span class="text-danger">*</span></label>
+                        <input type="time" name="time_of_day" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0" required>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">Timezone</label>
+                        <input type="text" name="timezone" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0">
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">Event</label>
+                        <select name="event_id" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0">
+                            <option value="">Select Event</option>
+                            @foreach($events as $event)
+                                <option value="{{ $event->id }}">{{ $event->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">Relation to Sunday</label>
+                        <input type="text" name="relation_to_sunday" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0">
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">Start Date</label>
+                        <input type="date" name="date_start" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0">
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">End Date</label>
+                        <input type="date" name="date_end" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0">
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold text-dark">Replaces</label>
+                        <input type="text" name="replaces" class="form-control form-control-lg rounded-pill shadow-sm bg-light border-0">
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0 pb-4 px-5">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4 shadow-sm" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-lg btn-animated">
+                        <i class="fas fa-save me-2"></i>
+                        <span id="serviceTimeSaveBtnText">Save Service Time</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
     </div>
 </div>
 
-@include('service_times.add')
 
-@endsection
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-body text-center py-5">
+                <i class="fas fa-trash-alt fa-4x text-danger mb-4"></i>
+                <h4>Delete Service Time?</h4>
+                <p class="text-muted mb-4">"<strong id="deleteEventName"></strong>" will be deleted permanently.</p>
+
+                <form id="deleteForm" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" class="btn btn-light px-4" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger px-5">Yes, Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openAddServiceTimeModal() {
+    $('#serviceTimeModal').modal('show');
+    $('#modalTitle').html('<i class="fas fa-plus-circle me-3"></i>Add Service Time');
+    $('#saveBtnText').text('Save Service Time');
+
+    $('#serviceTimeForm')[0].reset();
+    $('#serviceTimeForm').attr('action', '{{ route('service-times.store') }}');
+    $('#serviceTimeForm').find('input[name="_method"]').val('POST');
+}
+
+function editServiceTime(serviceTime) {
+    $('#serviceTimeModal').modal('show');
+    $('#serviceTimeModalTitle').html('<i class="fas fa-edit me-3"></i>Edit Service Time');
+    $('#serviceTimeSaveBtnText').text('Update Service Time');
+
+    // YEH SABSE ZAROORI LINE — Laravel route generate karo
+    const updateUrl = "{{ route('service-times.update', ':id') }}".replace(':id', serviceTime.id);
+    $('#serviceTimeForm').attr('action', updateUrl);
+
+    // PUT method set karo
+    $('#serviceTimeForm').find('input[name="_method"]').val('PUT');
+
+    // Fields fill karo
+    $('[name="campus_id"]').val(serviceTime.campus_id);
+    $('[name="day_of_week"]').val(serviceTime.day_of_week);
+    $('[name="time_of_day"]').val(serviceTime.time_of_day?.substr(0,5) || '');
+    $('[name="timezone"]').val(serviceTime.timezone);
+    $('[name="event_id"]').val(serviceTime.event_id);
+    $('[name="relation_to_sunday"]').val(serviceTime.relation_to_sunday);
+    $('[name="date_start"]').val(serviceTime.date_start);
+    $('[name="date_end"]').val(serviceTime.date_end);
+    $('[name="replaces"]').val(serviceTime.replaces);
+}
+
+function deleteServiceTime(id, name) {
+    $('#deleteEventName').text(name);
+    $('#deleteForm').attr('action', '/service-times/' + id);
+    $('#deleteModal').modal('show');
+}
+</script>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+tr:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.btn:hover {
+    transform: translateY(-3px);
+    transition: 0.3s ease;
+}
+</style>

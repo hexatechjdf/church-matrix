@@ -60,7 +60,6 @@
             width: 0;
             opacity: 0;
         }
-
         to {
             width: 60%;
             opacity: 1;
