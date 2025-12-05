@@ -506,8 +506,6 @@ function _tokens_renew()
 
     }
 
-
-
 }
 
 
