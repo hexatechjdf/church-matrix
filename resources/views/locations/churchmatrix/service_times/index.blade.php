@@ -53,7 +53,9 @@
                         $time->event = isset($time->event) ? (object) $time->event : null;
                         $time->campus = isset($time->campus) ? (object) $time->campus : null;
                         @endphp
-                        <tr class="border-start border-4 border-primary" data-service-time-id="{{ $time->id }}">
+                        <tr class="border-start border-4 border-primary"
+                            data-service-time-id="{{ $time->id }}"
+                            data-cm-id="{{ $time->cm_id ?? '' }}">
                             <td class="ps-4 fw-bold text-primary">{{ $loop->iteration }}</td>
                             <td>{{ $time->campus->slug ?? $time->campus_id ?? 'N/A' }}</td>
                             <td>{{ $days[$time->day_of_week] ?? $time->day_of_week }}</td>
@@ -65,15 +67,16 @@
                             <td>{{ isset($time->replaces) ? ($time->replaces ? 'Yes' : 'No') : 'N/A' }}</td>
                             <td>{{ $time->event->name ?? 'N/A' }}</td>
                             <td class="text-center">
-                                <button class="btn btn-sm rounded-circle shadow-sm me-2"
-                                    onclick="editServiceTime({{ $time->id }}, '{{ addslashes($time->event->name ?? 'Service Time') }}')">
+                                <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2"
+                                    onclick='editServiceTime(@json($time))'>
                                     <i class="fas fa-edit"></i>
                                 </button>
 
-                                <button class="btn btn-sm rounded-circle shadow-sm"
-                                    onclick="deleteServiceTime({{ $time->id }}, '{{ addslashes($time->event->name ?? 'Service Time') }}')">
+                                <button class="btn btn-sm btn-danger rounded-circle shadow-sm"
+                                    onclick="deleteServiceTime({{ $time->id }}, '@js($time->event->name ?? 'Service Time')')">
                                     <i class="fas fa-trash"></i>
                                 </button>
+
                             </td>
                         </tr>
                         @empty
@@ -121,6 +124,8 @@
 
 @include('locations.churchmatrix.service_times.add')
 @include('locations.churchmatrix.service_times.edit')
+@include('locations.churchmatrix.service_times.delete')
+
 
 <script>
     function openAddServiceTimeModal() {
@@ -132,30 +137,105 @@
 
     }
 
-function editServiceTime(serviceTime) {
-    $('#editServiceTimeModal').modal('show');
+    function editServiceTime(serviceTime) {
+        // Populate modal fields
+        $('#edit_service_time_id').val(serviceTime.id);
+        $('#edit_day_of_week').val(serviceTime.day_of_week);
 
-    $('#edit_id').val(serviceTime.id);
-    $('#edit_campus_id').val(serviceTime.campus_id || 137882); 
-    $('#edit_day_of_week').val(serviceTime.day_of_week);
-    $('#edit_time_of_day').val(serviceTime.time_of_day);
-    $('#edit_date_start').val(serviceTime.date_start);
-    $('#edit_date_end').val(serviceTime.date_end);
-    $('#edit_event_id').val(serviceTime.event?.id || '');
+        // Extract HH:MM from ISO datetime string
+        $('#edit_time_of_day').val(serviceTime.time_of_day ? serviceTime.time_of_day.substring(11, 16) : '');
 
-    let url = "{{ route('locations.churchmatrix.service-times.update', ':id') }}";
-    url = url.replace(':id', serviceTime.cm_id || serviceTime.id);
-    $('#editServiceTimeForm').attr('action', url);
+        $('#edit_date_start').val(serviceTime.date_start || '');
+        $('#edit_date_end').val(serviceTime.date_end || '');
+        $('#edit_replaces').val(serviceTime.replaces ? 1 : 0);
+        $('#edit_event_id').val(serviceTime.event?.id || '');
+
+        // Set the form action dynamically
+        const updateUrl = `{{ route('locations.churchmatrix.service-times.update', ':id') }}`.replace(':id', serviceTime.id);
+        $('#editServiceTimeForm').attr('action', updateUrl);
+
+        // Show modal
+        $('#editServiceTimeModal').modal('show');
+    }
+
+
+
+
+    // Open delete modal
+    function deleteServiceTime(id, name) {
+    $('#deleteEventName').text(name);
+    $('#deleteForm').attr('action', '/service-times/' + id); 
+    $('#deleteModal').modal('show');
 }
 
 
+    // Handle delete form submission via AJAX
+    $(document).on('submit', '#deleteForm', function(e) {
+        e.preventDefault();
 
+        let form = this;
+        let url = $(form).attr('action');
+        let $btn = $(form).find('button[type="submit"]');
+        let originalText = $btn.html();
 
-    function deleteServiceTime(id, name) {
-        $('#deleteEventName').text(name);
-        $('#deleteForm').attr('action', '/service-times/' + id);
-        $('#deleteModal').modal('show');
-    }
+        $btn.html('<i class="fas fa-spinner fa-spin"></i> Deleting...').prop('disabled', true);
+
+        $.ajax({
+            url: url,
+            method: 'POST', // Laravel spoofing DELETE
+            data: {
+                _token: $('input[name="_token"]').val(),
+                _method: 'DELETE'
+            },
+            success: function(res) {
+                if (res.success) {
+                    // Remove the row from the table
+                    let row = document.querySelector(`tr[data-service-time-id="${res.id}"]`);
+                    if (row) row.remove();
+
+                    // Show toast
+                    Toast.fire({
+                        icon: 'success',
+                        title: res.message || 'Service time deleted successfully!'
+                    });
+
+                    $('#deleteModal').modal('hide');
+
+                    // Optional: show "No Service Times Found" row if table empty
+                    if ($('#serviceTimesTable tr').length === 0) {
+                        $('#serviceTimesTable').html(`
+                        <tr id="noServiceTimesRow">
+                            <td colspan="11" class="text-center py-5">
+                                <div>
+                                    <i class="fas fa-clock fa-5x text-muted mb-4 opacity-50"></i>
+                                    <h4 class="text-muted fw-light">No Service Times Found</h4>
+                                    <p class="text-muted">Add service times linked to events</p>
+                                    <button class="btn btn-outline-primary px-4" onclick="location.reload()">
+                                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                    }
+                } else {
+                    Toast.fire({
+                        icon: 'error',
+                        title: res.message || 'Delete failed!'
+                    });
+                }
+            },
+            error: function(xhr) {
+                Toast.fire({
+                    icon: 'error',
+                    title: xhr.responseJSON?.message || 'Delete failed!'
+                });
+            },
+            complete: function() {
+                $btn.html(originalText).prop('disabled', false);
+            }
+        });
+    });
 </script>
 
 <style>

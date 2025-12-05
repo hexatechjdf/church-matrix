@@ -41,91 +41,78 @@ class ServiceTimeService
         }
     }
 
-    public function create(array $data)
-    {
-        try {
-            $campusId = $data['campus_id'];
+   public function create(array $data)
+{
+    try {
+        $campusId = $data['campus_id']; 
 
-            $response = Http::withHeaders([
-                'X-Auth-User' => $this->apiUser,
-                'X-Auth-Key'  => $this->apiKey,
-                'Accept'      => 'application/json',
-            ])->post('https://churchmetrics.com/api/v1/service_times.json', [
-                'campus_id'          => $campusId,
-                'day_of_week'        => $data['day_of_week'],
-                'time_of_day'        => date('Y-m-d\TH:i:s\Z', strtotime($data['time_of_day'])),
-                'timezone'           => $data['timezone'] ?? 'Central Time (US & Canada)',
-                'relation_to_sunday' => $data['relation_to_sunday'] ?? 'Current',
-                'date_start'         => $data['date_start'],
-                'date_end'           => $data['date_end'],
-                'replaces'           => $data['replaces'] ?? false,
-                'event_id'           => $data['event_id'] ?? null,
+        $response = Http::withHeaders([
+            'X-Auth-User' => $this->apiUser,
+            'X-Auth-Key'  => $this->apiKey,
+            'Accept'      => 'application/json',
+        ])->post('https://churchmetrics.com/api/v1/service_times.json', [
+            'campus_id'          => $campusId,
+            'day_of_week'        => $data['day_of_week'],
+            'time_of_day'        => date('Y-m-d\TH:i:s\Z', strtotime($data['time_of_day'])),
+            'timezone'           => $data['timezone'] ?? 'Central Time (US & Canada)',
+            'relation_to_sunday' => $data['relation_to_sunday'] ?? 'Current',
+            'date_start'         => $data['date_start'],
+            'date_end'           => $data['date_end'],
+            'replaces'           => $data['replaces'] ?? false,
+            'event_id'           => $data['event_id'] ?? null,
+        ]);
+
+        if ($response->successful()) {
+            return ['success' => true, 'service_time' => $response->json()];
+        } else {
+            Log::error('Create ServiceTime API Failed', [
+                'status' => $response->status(),
+                'body' => $response->body()
             ]);
-
-            if ($response->successful()) {
-                return ['success' => true, 'service_time' => $response->json()];
-            } else {
-                Log::error('Create ServiceTime API Failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body()
-                ]);
-                return ['success' => false, 'message' => 'Failed to create service time.'];
-            }
-        } catch (\Exception $e) {
-            Log::error('Create ServiceTime API Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            return ['success' => false, 'message' => 'Failed to create service time.'];
         }
+    } catch (\Exception $e) {
+        Log::error('Create ServiceTime API Error: ' . $e->getMessage());
+        return ['success' => false, 'message' => $e->getMessage()];
     }
+}
 
 
-    public function updateServiceTimeOnAPI($cm_id, array $data)
-    {
-        try {
-            $timeFormatted = date('Y-m-d\TH:i:s\Z', strtotime($data['time_of_day']));
+    public function update($serviceTimeId, array $data)
+{
+    try {
+        $payload = [
+            'day_of_week'        => $data['day_of_week'],
+            'time_of_day'        => date('Y-m-d\TH:i:s\Z', strtotime($data['time_of_day'])),
+            'date_start'         => $data['date_start'] ?? null,
+            'date_end'           => $data['date_end'] ?? null,
+            'replaces'           => filter_var($data['replaces'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'event_id'             => $data['event_id'] ?? null,
+        ];
 
-            $payload = [
-                'campus_id'          => $data['campus_id'] ?? $this->campusId, // ← 137882 fallback
-                'day_of_week'        => $data['day_of_week'],
-                'time_of_day'        => $timeFormatted,
-                'timezone'           => $data['timezone'] ?? 'Central Time (US & Canada)',
-                'relation_to_sunday' => $data['relation_to_sunday'] ?? 'Current',
-                'date_start'         => $data['date_start'],
-                'date_end'           => $data['date_end'],
-                'replaces'           => $data['replaces'] ?? false,
-                'event_id'           => $data['event_id'] ?? null,
-            ];
+        $payload = array_filter($payload, fn($value) => !is_null($value));
 
-            $response = Http::withHeaders([
-                'X-Auth-User' => $this->apiUser,
-                'X-Auth-Key'  => $this->apiKey,
-                'Accept'      => 'application/json',
-            ])->put("https://churchmetrics.com/api/v1/service_times/{$cm_id}.json", $payload);
+        $response = Http::withHeaders([
+            'X-Auth-User' => $this->apiUser,
+            'X-Auth-Key'  => $this->apiKey,
+            'Accept'      => 'application/json',
+        ])->put("https://churchmetrics.com/api/v1/service_times/{$serviceTimeId}.json", $payload);
 
-            if ($response->successful()) {
-                return [
-                    'success'      => true,
-                    'service_time' => $response->json()
-                ];
-            }
-
-            // YE PART CHANGE KARO – AB REAL ERROR DIKHEGA!
-            Log::error('Update ServiceTime API Failed', [
-                'cm_id'   => $cm_id,
-                'payload' => $payload,
-                'status'  => $response->status(),
-                'body'    => $response->body(),
-                'headers' => $response->headers()
-            ]);
-
-            return [
-                'success' => false,
-                'message' => 'API Error: ' . $response->status() . ' – ' . substr($response->body(), 0, 200)
-            ];
-
-            return ['success' => false, 'message' => 'Failed to update service time on ChurchMatrix.'];
-        } catch (\Exception $e) {
-            Log::error('Update ServiceTime API Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+        if ($response->successful()) {
+            return ['success' => true, 'service_time' => $response->json()];
         }
+
+        Log::error('Update ServiceTime Failed', [
+            'id'     => $serviceTimeId,
+            'status' => $response->status(),
+            'body'   => $response->body()
+        ]);
+
+        return ['success' => false, 'message' => 'API Error: ' . $response->body()];
+    } catch (\Exception $e) {
+        Log::error('Update ServiceTime Exception: ' . $e->getMessage());
+        return ['success' => false, 'message' => $e->getMessage()];
     }
+}
+
 }

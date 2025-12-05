@@ -1,3 +1,4 @@
+<!-- Edit Service Time Modal -->
 <div class="modal fade" id="editServiceTimeModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 shadow-lg">
@@ -5,7 +6,8 @@
             <form id="editServiceTimeForm" method="POST">
                 @csrf
                 @method('PUT')
-                <input type="hidden" name="campus_id" id="edit_campus_id">
+                <input type="hidden" name="service_time_id" id="edit_service_time_id">
+                <input type="hidden" name="campus_id" value="137882">
 
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Service Time</h5>
@@ -13,6 +15,7 @@
                 </div>
 
                 <div class="modal-body">
+
                     <div class="mb-3">
                         <label>Day of Week</label>
                         <select name="day_of_week" id="edit_day_of_week" class="form-control" required>
@@ -33,30 +36,38 @@
 
                     <div class="mb-3">
                         <label>Start Date</label>
-                        <input type="date" name="date_start" id="edit_date_start" class="form-control" required>
+                        <input type="date" name="date_start" id="edit_date_start" class="form-control">
                     </div>
 
                     <div class="mb-3">
                         <label>End Date</label>
-                        <input type="date" name="date_end" id="edit_date_end" class="form-control" required>
+                        <input type="date" name="date_end" id="edit_date_end" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Include in Weekly Reports? (replaces regular service)</label>
+                        <select name="replaces" id="edit_replaces" class="form-control">
+                            <option value="0">No (extra event)</option>
+                            <option value="1">Yes (e.g. Easter, Christmas)</option>
+                        </select>
                     </div>
 
                     <div class="mb-3">
                         <label>Event (Optional)</label>
                         <select name="event_id" id="edit_event_id" class="form-control">
-                            <option value="">-- Select Event --</option>
+                            <option value="">-- No Event --</option>
                             @foreach($events as $event)
-                                <option value="{{ $event->id }}">{{ $event->name ?? 'N/A' }}</option>
+                            <option value="{{ $event->id }}">{{ $event->name }}</option>
                             @endforeach
                         </select>
                     </div>
+
                 </div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i> 
-                        <span id="saveEditServiceTimeBtnText">Update Service Time</span>
+                        <i class="fas fa-save me-2"></i> <span id="saveEditBtnText">Update Service Time</span>
                     </button>
                 </div>
             </form>
@@ -65,122 +76,102 @@
     </div>
 </div>
 
+
 @push('js')
 <script>
-    function editServiceTime(serviceTime) {
-        $('#editServiceTimeModal').modal('show');
+    console.log('before ready 1st');
 
-        // Campus ID (must have fallback)
-        $('#edit_campus_id').val(serviceTime.campus_id || 137882);
-
-        // Day of week
-        $('#edit_day_of_week').val(serviceTime.day_of_week);
-
-        // Time: API se "2025-12-04T10:30:00Z" aata hai → sirf "10:30" chahiye
-        let timeValue = '';
-        if (serviceTime.time_of_day) {
-            timeValue = serviceTime.time_of_day.split('T')[1]?.substring(0, 5) || '';
-        }
-        $('#edit_time_of_day').val(timeValue);
-
-        // Dates
-        $('#edit_date_start').val(serviceTime.date_start || '');
-        $('#edit_date_end').val(serviceTime.date_end || '');
-
-        // Event
-        $('#edit_event_id').val(serviceTime.event?.id || '');
-
-        // SABSE JARURI: cm_id use karo, local id nahi!
-        const cmId = serviceTime.cm_id;
-        if (!cmId) {
-            Toast.fire({ icon: 'error', title: 'ChurchMatrix ID missing!' });
-            $('#editServiceTimeModal').modal('hide');
-            return;
-        }
-
-        // Dynamic URL with cm_id
-        let url = "{{ route('locations.churchmatrix.service-times.update', ':id') }}";
-        url = url.replace(':id', cmId);
-        $('#editServiceTimeForm').attr('action', url);
-    }
-
-    function updateServiceTimeRow(serviceTime) {
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const row = $(`tr[data-service-time-id="${serviceTime.id}"]`);
-
-        // Time ko sirf HH:MM dikhao
-        let displayTime = serviceTime.time_of_day || '';
-        if (displayTime.includes('T')) {
-            displayTime = displayTime.split('T')[1].substring(0, 5);
-        }
-
-        row.html(`
-            <td class="ps-4 fw-bold text-primary">#</td>
-            <td>${serviceTime.campus_id || 'N/A'}</td>
-            <td>${days[serviceTime.day_of_week] || serviceTime.day_of_week}</td>
-            <td>${displayTime}</td>
-            <td>${serviceTime.timezone || 'N/A'}</td>
-            <td>${serviceTime.relation_to_sunday || 'N/A'}</td>
-            <td>${serviceTime.date_start || ''}</td>
-            <td>${serviceTime.date_end || ''}</td>
-            <td>${serviceTime.replaces ? 'Yes' : 'No'}</td>
-            <td>${serviceTime.event?.name || 'N/A'}</td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2"
-                        onclick='editServiceTime(${JSON.stringify(serviceTime)})'>
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-danger rounded-circle shadow-sm"
-                        onclick="deleteServiceTime(${serviceTime.id}, '${(serviceTime.event?.name || '').replace(/'/g, "\\'")}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `);
-
-        row.addClass('new-row-highlight');
-        setTimeout(() => row.removeClass('new-row-highlight'), 3000);
-    }
 
     $(document).on('submit', '#editServiceTimeForm', function(e) {
         e.preventDefault();
 
-        const form = this;
-        const formData = new FormData(form);
-        const $btn = $(form).find('button[type="submit"]');
-        const originalText = $btn.html();
+        let form = this;
+        let formData = new FormData(form);
 
-        $btn.html('<i class="fas fa-spinner fa-spin"></i> Updating...').prop('disabled', true);
+        formData.append('_token', $('input[name="_token"]').val());
+        formData.append('_method', 'PUT');
+
+        let $submitBtn = $(form).find('button[type="submit"]');
+        let originalText = $submitBtn.html();
+        $submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Updating...').prop('disabled', true);
 
         $.ajax({
             url: form.action,
-            method: 'POST',
+            method: 'POST', 
             data: formData,
             processData: false,
             contentType: false,
             success: function(res) {
                 if (res.success) {
                     $('#editServiceTimeModal').modal('hide');
-                    updateServiceTimeRow(res.service_time);
+
+                    let row = document.querySelector(`tr[data-service-time-id="${res.service_time.id}"]`);
+                    if (row) {
+                        row.outerHTML = createServiceTimeRow(res.service_time);
+                    }
 
                     Toast.fire({
                         icon: 'success',
-                        title: res.message || 'Service Time updated successfully!'
+                        title: res.message || 'Service time updated successfully!'
                     });
+
+                    form.reset();
+                    $('#editServiceTimeForm').attr('action', '');
                 }
             },
             error: function(xhr) {
-                const msg = xhr.responseJSON?.message || 'Update failed!';
-                Toast.fire({ icon: 'error', title: msg });
+                let msg = xhr.responseJSON?.message || 'Something went wrong!';
+                Toast.fire({
+                    icon: 'error',
+                    title: msg
+                });
             },
             complete: function() {
-                $btn.html(originalText).prop('disabled', false);
+                $submitBtn.html(originalText).prop('disabled', false);
             }
         });
     });
 
-    $('#editServiceTimeModal').on('hidden.bs.modal', function() {
-        $(this).find('form')[0].reset();
-        $('#saveEditServiceTimeBtnText').text('Update Service Time');
-    });
+
+
+    function formatTime(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':');
+    const hour = ((+h + 11) % 12 + 1);
+    const ampm = +h >= 12 ? 'PM' : 'AM';
+    return `${hour}:${m} ${ampm}`;
+}
+
+function createServiceTimeRow(st) {
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const time = formatTime(st.time_of_day);
+    const eventName = st.event?.name || '';
+    const replacesText = st.replaces ? 'Yes' : 'No';
+
+    return `
+<tr class="border-start border-4 border-primary" data-service-time-id="${st.id}">
+    <td class="ps-4 fw-bold text-primary">#</td>
+    <td>${st.campus_id}</td>
+    <td>${days[st.day_of_week]}</td>
+    <td>${time}</td>
+    <td>${st.timezone || 'N/A'}</td>
+    <td>${st.relation_to_sunday || 'N/A'}</td>
+    <td>${st.date_start || '-'}</td>
+    <td>${st.date_end || '-'}</td>
+    <td>${replacesText}</td>
+    <td>${eventName}</td>
+    <td class="text-center">
+        <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2"
+            onclick='editServiceTime(${JSON.stringify(st)})'>
+            <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-danger rounded-circle shadow-sm"
+            onclick="deleteServiceTime(${st.id}, '${eventName.replace(/'/g, "\\'")}')">
+            <i class="fas fa-trash"></i>
+        </button>
+    </td>
+</tr>`;
+}
+
 </script>
 @endpush
