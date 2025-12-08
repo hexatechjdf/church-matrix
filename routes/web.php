@@ -133,10 +133,14 @@ Route::prefix('settings')->name('setting.')->group(function () {
 
 Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
     Route::get('/', [ChurchMatrixController::class, 'index'])->name('index');
-    Route::post('/save-api', [ChurchMatrixController::class, 'saveApi'])->name('save-api');
-    Route::post('/save-location', [ChurchMatrixController::class, 'saveLocation'])->name('save-location');
-    Route::post('/save-region', [ChurchMatrixController::class, 'saveRegion'])->name('save-region');
-    Route::post('/save-location', [ChurchMatrixController::class, 'saveLocation'])->name('save-location');
+    Route::get('/request/listing', [ChurchMatrixController::class, 'requestlisting'])->name('request.listing');
+    Route::post('/accpet-request/{id}', [ChurchMatrixController::class, 'acceptRequest'])->name('accept.request')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/test-request/{id}', [ChurchMatrixController::class, 'testRequest'])->name('test.request')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/save-api', [ChurchMatrixController::class, 'saveApi'])->name('save-api')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/save-location', [ChurchMatrixController::class, 'saveLocation'])->name('save-location')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/save-region', [ChurchMatrixController::class, 'saveRegion'])->name('save-region')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/save-location', [ChurchMatrixController::class, 'saveLocation'])->name('save-location')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/save-timezone', [ChurchMatrixController::class, 'saveTimezone'])->name('save-timezone')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 });
 
 
@@ -179,16 +183,15 @@ Route::prefix('locations')->name('locations.')->group(function () {
             Route::get('/', [SettingIntergration::class, 'index'])->name('index');
         });
 
-        Route::prefix('settings')->name('settings.')->group(function () {
-            Route::post('/timezone', [TimeZoneController::class, 'saveTimezone'])->name('timezone.save');
+        Route::prefix('intergration')->name('intergration.')->group(function () {
+            Route::prefix('events')->name('events.')->group(function () {
+                Route::get('/', [ChurchEventController::class, 'index'])->name('index');
+                Route::post('/store', [ChurchEventController::class, 'store'])->name('store');
+                Route::put('/{id}', [ChurchEventController::class, 'update'])->name('update');
+                Route::delete('/{id}', [ChurchEventController::class, 'destroy'])->name('destroy');
+            });
         });
 
-        Route::prefix('events')->name('events.')->group(function () {
-            Route::get('/', [ChurchEventController::class, 'index'])->name('index');
-            Route::post('/store', [ChurchEventController::class, 'store'])->name('store');
-            Route::put('/{id}', [ChurchEventController::class, 'update'])->name('update');
-            Route::delete('/{id}', [ChurchEventController::class, 'destroy'])->name('destroy');
-        });
 
         Route::prefix('service-times')->name('service-times.')->group(function () {
             Route::get('/', [ServiceTimeController::class, 'index'])->name('index');

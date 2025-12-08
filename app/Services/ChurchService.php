@@ -11,36 +11,37 @@ class ChurchService
     {
         $user = loginUser();
         $ty = $user->role == 0 ? 'admin' : 'location';
+        if($ty == 'location')
+        {
+           $user->church_admin = false;
+           $user->save();
+        }
         return CrmToken::updateOrCreate(['user_id' => $user->id,
             'crm_type' => 'church'],[
             'location_id' => $user->location,
-
             'user_type' => $ty,
             'access_token' => $data['church_matrix_user'],
             'refresh_token'  => $data['church_matrix_api'],
         ]);
     }
 
-    public function fetchRegions($crm)
+    public function fetchRegions($crm=null)
     {
         return $this->request('GET', 'regions.json',[],false,$crm);
     }
 
-    public function saveChurchSetting(int $regionId)
+    public function saveChurchSetting($id, $key)
     {
         $user = loginUser();
-        CrmToken::where(['user_id' => $user->id,'crm_type' => 'church'])->update([
-            'company_id' => $regionId,
-        ]);
+        $t = $user->churchToken;
+        if (!$t) {
+            return "Church token not found";
+        }
+
+        $t->$key = $id;
+        $t->save();
     }
 
-    public function saveLocation($locationId)
-    {
-        $user = loginUser();
-        CrmToken::where(['user_id' => $user->id,'crm_type' => 'church'])->update([
-            'location_id' => $locationId,
-        ]);
-    }
 
    public function request($method, $url, $data = [],$header_required = false,$crm = null)
     {
@@ -48,6 +49,7 @@ class ChurchService
         $endpoint = $baseurl . $url;
 
         $crm = $crm ?? getChurchToken();
+
 
         $auth_key = $crm->refresh_token ?? '2b98fda4b8c22b26d7da69d816bf3ae7';
         $auth_user = $crm->access_token ?? 'radiwa6602@dwakm.com';

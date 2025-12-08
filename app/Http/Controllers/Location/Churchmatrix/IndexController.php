@@ -31,11 +31,13 @@ class IndexController extends Controller
             $timezones[$tz] = sprintf('(GMT%s%02d:%02d) %s', $sign, abs($hours), $minutes, $tz);
         }
 
-        $settings = getChurchToken();
-        $regions =  $settings ? $this->service->fetchRegions($settings) : null;
+        $settings = getChurchToken('location');
+
+        $regions =  $settings && $user->church_admin ? $this->service->fetchRegions($settings) : null;
 
         return view('locations.churchmatrix.index',get_defined_vars());
     }
+
     public function setCampus(Request $request)
     {
        $name = $request->name ?? 'testing';
@@ -43,8 +45,7 @@ class IndexController extends Controller
        $user = loginUser();
        $region_id = get_setting($user->id, 'region');
        $timezone = $user->timezone ?? 'London';
-
-
-
     }
+
+
 }

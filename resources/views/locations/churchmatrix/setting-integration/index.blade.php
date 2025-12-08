@@ -5,10 +5,10 @@
 @push('css')
     <link rel="stylesheet" href="{{ asset('css/setting_integration.css') }}">
     <style>
+        .settings-container {
+            max-width: 1300px;
+        }
 
-         .settings-container {
-        max-width: 1300px;
-    }
         .settings-header {
             display: flex;
             align-items: center;
@@ -27,7 +27,7 @@
             background: #fff;
             border-radius: 12px;
             padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             cursor: pointer;
             position: relative;
             transition: all 0.3s ease;
@@ -36,7 +36,7 @@
 
         .module-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
         }
 
         .module-card.active {
@@ -65,17 +65,33 @@
             margin-bottom: 1rem;
         }
 
-        .icon-wrapper.events    { background: #ede9fe; }
-        .icon-wrapper.service   { background: #fce7f3; }
-        .icon-wrapper.records   { background: #dbeafe; }
+        .icon-wrapper.events {
+            background: #ede9fe;
+        }
+
+        .icon-wrapper.service {
+            background: #fce7f3;
+        }
+
+        .icon-wrapper.records {
+            background: #dbeafe;
+        }
 
         .module-icon {
             font-size: 1.75rem;
         }
 
-        .icon-wrapper.events .module-icon   { color: #8b5cf6; }
-        .icon-wrapper.service .module-icon  { color: #ec4899; }
-        .icon-wrapper.records .module-icon  { color: #3b82f6; }
+        .icon-wrapper.events .module-icon {
+            color: #8b5cf6;
+        }
+
+        .icon-wrapper.service .module-icon {
+            color: #ec4899;
+        }
+
+        .icon-wrapper.records .module-icon {
+            color: #3b82f6;
+        }
 
         .module-title {
             font-size: 1.125rem;
@@ -101,7 +117,7 @@
             background: #fff;
             border-radius: 12px;
             padding: 2rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         }
 
         .module-content-area.active {
@@ -110,98 +126,135 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 @endpush
 
 @section('content')
 
-<div class="settings-container">
+    <div class="settings-container">
 
-    <!-- Header -->
-   <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="h3 mb-0">Settings</h1>
-            <p class="text-muted mb-0">Configure your account preferences and integrations</p>
-        </div>
-        <div> @include('button.index') </div>
-    </div>
-
-    <!-- Modules Grid -->
-    <div class="modules-grid">
-
-        <div class="module-card active" data-module="events">
-            <div class="icon-wrapper events">
-                <i class="fas fa-calendar-check module-icon"></i>
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="h3 mb-0">Settings</h1>
+                <p class="text-muted mb-0">Configure your account preferences and integrations</p>
             </div>
-            <div class="module-content">
-                <h3 class="module-title">Events</h3>
-                <p class="module-desc">Create, manage, and track all church events and activities</p>
-            </div>
-            <i class="fas fa-chevron-right module-arrow"></i>
+            <div> @include('button.index') </div>
         </div>
 
-        <div class="module-card" data-module="service-times">
-            <div class="icon-wrapper service">
-                <i class="fas fa-clock module-icon"></i>
-            </div>
-            <div class="module-content">
-                <h3 class="module-title">Service Time</h3>
-                <p class="module-desc">Schedule and organize service timings for your congregation</p>
-            </div>
-            <i class="fas fa-chevron-right module-arrow"></i>
+        <!-- Modules Grid -->
+
+
+
+
+{{--
+        <div id="events-content" class="module-content-area active">
+            @include('locations.churchmatrix.events.index')
         </div>
 
-        <div class="module-card" data-module="records">
-            <div class="icon-wrapper records">
-                <i class="fas fa-database module-icon"></i>
-            </div>
-            <div class="module-content">
-                <h3 class="module-title">Records</h3>
-                <p class="module-desc">View, manage, and organize all church records securely</p>
-            </div>
-            <i class="fas fa-chevron-right module-arrow"></i>
+        <div id="service-times-content" class="module-content-area">
+            @include('locations.churchmatrix.service_times.index')
         </div>
 
+        <div id="records-content" class="module-content-area">
+            @include('locations.churchmatrix.records.index')
+        </div> --}}
+
     </div>
 
-    <!-- Content Areas -->
-    <div id="events-content" class="module-content-area active">
-        @include('locations.churchmatrix.events.index')
     </div>
 
-    <div id="service-times-content" class="module-content-area">
-        @include('locations.churchmatrix.service_times.index')
-    </div>
-
-    <div id="records-content" class="module-content-area">
-        @include('locations.churchmatrix.records.index')
-    </div>
-
-</div>
-
-</div>
-
-<script>
-    document.querySelectorAll('.module-card').forEach(card => {
-        card.addEventListener('click', function () {
-            const module = this.getAttribute('data-module');
-
-            // Remove active class from all cards & content
-            document.querySelectorAll('.module-card').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.module-content-area').forEach(area => area.classList.remove('active'));
-
-            // Add active class to clicked card and corresponding content
-            this.classList.add('active');
-            const content = document.getElementById(module + '-content');
-            if (content) {
-                content.classList.add('active');
-                content.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    });
-
-</script>
 @endsection
+
+@push('script')
+    <script>
+        let currenttab = 'events';
+        let currentPageUrl = `{{ route('locations.churchmatrix.events.index') }}`;
+        let target = 'events-tab'
+        let selected_campus = '';
+        let nextPage = null;
+        let prevPage = null;
+
+
+
+    </script>
+    <script>
+        $(document).ready(function(){
+            selected_campus = $('#campus_id').val();
+
+        })
+
+        // function fetchEvents(currentPageUrl) {
+        //     $.ajax({
+        //         url: url,
+        //         type: "GET",
+        //         success: function(res) {
+        //             let $tbody = $('#events-table tbody');
+        //             $tbody.empty();
+
+        //             if(res.data.length === 0){
+        //                 $tbody.append('<tr><td colspan="3" class="text-center">No events found</td></tr>');
+        //             } else {
+        //                 res.data.forEach(event => {
+        //                     $tbody.append(`
+        //                         <tr class="border-start border-4 border-primary" data-event-id="${event.id}">
+        //                             <td>
+        //                                 <div class="d-flex align-items-center">
+        //                                     <h6 class="mb-0 fw-bold">${event.name}</h6>
+        //                                 </div>
+        //                             </td>
+        //                             <td class="text-muted"><i class="fas fa-calendar me-1"></i>${event.created_at}</td>
+        //                             <td class="text-center">
+        //                                 <button class="btn btn-sm rounded-circle shadow-sm me-2"
+        //                                     onclick="editEvent(${event.id}, '${event.name.replace(/'/g, "\\'")}')">
+        //                                     <i class="fas fa-edit"></i>
+        //                                 </button>
+        //                                 <button class="btn btn-sm rounded-circle shadow-sm"
+        //                                     onclick="deleteEvent(${event.id}, '${event.name.replace(/'/g, "\\'")}')">
+        //                                     <i class="fas fa-trash"></i>
+        //                                 </button>
+        //                             </td>
+        //                         </tr>
+        //                     `);
+        //                 });
+        //             }
+
+        //             // Update pagination
+        //             nextPage = res.next ? res.next : null;
+        //             prevPage = res.prev ? res.prev : null;
+
+        //             $('#next-btn').prop('disabled', !nextPage);
+        //             $('#prev-btn').prop('disabled', !prevPage);
+        //         },
+        //         error: function() {
+        //             toastr.error("Failed to load events");
+        //         }
+        //     });
+        // }
+
+        // $('#next-btn').on('click', function() {
+        //     if(nextPage) fetchEvents(currentPageUrl + '?page=' + nextPage);
+        // });
+
+        // $('#prev-btn').on('click', function() {
+        //     if(prevPage) fetchEvents(currentPageUrl + '?page=' + prevPage);
+        // });
+
+        // // Initial fetch
+        // $(document).ready(function() {
+        //     fetchEvents();
+        // });
+    </script>
+
+
+@endpush

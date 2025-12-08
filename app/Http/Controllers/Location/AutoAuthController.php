@@ -69,6 +69,7 @@ class AutoAuthController extends Controller
                     Auth::login($user);
                 }
 
+
                 $res->is_crm = $res->crm_connected;
                 $res->token_id = encrypt($res->user_id);
 

@@ -22,7 +22,7 @@
                     <h5>Timezone Configuration</h5>
                 </div>
                 <div class="card-body-modern">
-                    <form action="{{ route('locations.churchmatrix.settings.timezone.save') }}" method="POST">
+                    <form action="{{ route('church-matrix.save-timezone') }}" method="POST" class="form-submit">
                         @csrf
                         <div class="form-group">
                             <label class="form-label">
@@ -32,7 +32,7 @@
                                 <option value="">-- Choose Timezone --</option>
                                 @foreach ($timezones as $tz => $label)
                                 <option value="{{ $tz }}"
-                                    {{ ($user->timezone ?? '') == $tz ? 'selected' : '' }}>
+                                    {{ (@$settings->timezone ?? '') == $tz ? 'selected' : '' }}>
                                     {{ $label }}
                                 </option>
                                 @endforeach
@@ -133,3 +133,7 @@
     </div> --}}
 </div>
 @endsection
+
+@push('script')
+@include('components.submit-form')
+@endpush

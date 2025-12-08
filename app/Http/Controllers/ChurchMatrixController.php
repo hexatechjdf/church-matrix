@@ -27,13 +27,14 @@ class ChurchMatrixController extends Controller
     }
 
 
+
     public function saveApi(SaveChurchApiRequest $request)
     {
         $settings = $this->service->saveApiCredentials($request->validated());
-        $regions =  $this->service->fetchRegions() ?? null;
+        $crm = getChurchToken();
+        $regions =  $this->service->fetchRegions($crm) ?? null;
 
-        return redirect()->route('church-matrix.index')
-            ->with('success', 'Connected successfully!');
+        return response()->json(['regions' => $regions,'seccess' => 'Connected successfully!']);
     }
 
     public function saveRegion(Request $request)
@@ -42,10 +43,9 @@ class ChurchMatrixController extends Controller
             'region_id' => 'required|integer',
         ]);
 
-        $this->service->saveRegion($request->region_id);
+        $this->service->saveChurchSetting($request->region_id,'company_id');
 
-        return redirect()->route('church-matrix.index')
-            ->with('success', 'Region saved successfully!');
+        return response()->json(['seccess' => 'Region saved successfully!']);
     }
 
     public function saveLocation(Request $request)
@@ -54,9 +54,61 @@ class ChurchMatrixController extends Controller
             'location_id' => 'required|string',
         ]);
 
-        $this->service->saveLocation($request->location_id);
+        $this->service->saveChurchSetting($request->location_id,'location_id');
 
-        return redirect()->route('church-matrix.index')
-            ->with('success', 'Location ID saved successfully!');
+        return response()->json(['seccess' => 'Location ID saved successfully!']);
+    }
+
+    public function saveTimezone(Request $request)
+    {
+        $request->validate([
+            'timezone' => 'required|string'
+        ]);
+
+        $this->service->saveChurchSetting($request->timezone,'timezone');
+
+        return response()->json(['seccess' => 'Timezone updated successfully!']);
+    }
+
+    public function requestlisting(Request $request)
+    {
+        $tokens = CrmToken::whereHas('user',function($q){
+            $q->where(['role'=>1, 'church_admin' => false,'crm_type' => 'church']);
+        })->paginate(10);
+
+        if ($request->ajax()) {
+            return view('admin.components.crm-request-table', compact('tokens'))->render();
+        }
+
+    }
+
+    public function acceptRequest(Request $request,$id)
+    {
+        $token = CrmToken::find($id);
+
+        if(!$token){
+            return response()->json(['message' => 'Token not found'], 404);
+        }
+
+        $user = $token->user;
+        $user->church_admin = true;
+        $user->save();
+
+        return response()->json(['message' => 'Token accepted successfully']);
+
+    }
+
+    public function testRequest(Request $request,$id)
+    {
+        try{
+            $crm = getChurchToken('location', $id);
+            $res = $this->service->fetchRegions($crm);
+
+            return response()->json(['message' => 'Tested successfully']);
+        }catch(\Exception $e){
+
+        }
+
+        return response()->json(['message' => 'Unauthorized Data'], 404);
     }
 }

@@ -48,6 +48,11 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    public function campus()
+    {
+        return $this->hasOne(Campus::class, 'user_id');
+    }
+
     public function crmtoken()
     {
         return $this->hasOne(CrmToken::class, 'user_id')
