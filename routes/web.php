@@ -17,6 +17,7 @@ use App\Http\Controllers\Location\Churchmatrix\ChurchEventController;
 use App\Http\Controllers\Location\Churchmatrix\RecordController;
 use App\Http\Controllers\Location\Churchmatrix\ServiceTimeController;
 use App\Http\Controllers\Location\Churchmatrix\SettingIntergration;
+use App\Http\Controllers\ChartController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -137,6 +138,11 @@ Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
     Route::post('/save-region', [ChurchMatrixController::class, 'saveRegion'])->name('save-region');
     Route::post('/save-location', [ChurchMatrixController::class, 'saveLocation'])->name('save-location');
 });
+
+
+
+Route::get('/charts', [ChartController::class, 'index']);
+Route::get('/charts/data', [ChartController::class, 'getChartData']);
 
 
 

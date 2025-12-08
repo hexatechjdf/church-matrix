@@ -72,11 +72,11 @@
                                     <i class="fas fa-edit"></i>
                                 </button>
 
-                                <button class="btn btn-sm btn-danger rounded-circle shadow-sm"
-                                    onclick="deleteServiceTime({{ $time->id }}, '@js($time->event->name ?? 'Service Time')')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
 
+                                <button type="button"
+                                    class="btn btn-sm btn-danger rounded-circle shadow-sm"
+                                    onclick="deleteServiceTime({{ $time->id }}, '{{ addslashes($time->event?->name ?? 'Service Time') }}')">
+                                    <i class="fas fa-trash"></i> </button>
                             </td>
                         </tr>
                         @empty
@@ -102,20 +102,30 @@
 </div>
 
 
-
-<div class="modal fade" id="deleteModal" tabindex="-1">
+<!-- Delete Modal (Yeh bilkul yeh hi use karo) -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body text-center py-5">
                 <i class="fas fa-trash-alt fa-4x text-danger mb-4"></i>
                 <h4>Delete Service Time?</h4>
-                <p class="text-muted mb-4">"<strong id="deleteEventName"></strong>" will be deleted permanently.</p>
+                <p class="text-muted">
+                    "<strong id="deleteEventName" class="text-danger"></strong>"
+                    will be deleted <strong class="text-danger">permanently</strong>.
+                </p>
 
                 <form id="deleteForm" method="POST">
                     @csrf
                     @method('DELETE')
-                    <button type="button" class="btn btn-light px-4" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger px-5">Yes, Delete</button>
+                    <input type="hidden" id="deleteUrl" value="">
+                    <div class="mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger px-5">Yes, Delete</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -124,7 +134,7 @@
 
 @include('locations.churchmatrix.service_times.add')
 @include('locations.churchmatrix.service_times.edit')
-@include('locations.churchmatrix.service_times.delete')
+
 
 
 <script>
@@ -158,83 +168,73 @@
         $('#editServiceTimeModal').modal('show');
     }
 
+    window.deleteServiceTime = function(id, name) {
+        // Name set karo
+        document.getElementById('deleteEventName').textContent = name || 'Service Time';
 
+        // Form ka action set karo
+        document.getElementById('deleteForm').action = '/service-times/' + id;
 
+        // Modal kholo — 3 tarike se (ek bhi ho to chalega)
+        try {
+            $('#deleteModal').modal('show'); // jQuery way
+        } catch (e) {}
 
-    // Open delete modal
-    function deleteServiceTime(id, name) {
-    $('#deleteEventName').text(name);
-    $('#deleteForm').attr('action', '/service-times/' + id); 
-    $('#deleteModal').modal('show');
-}
+        try {
+            var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show(); // Bootstrap 5 pure JS
+        } catch (e) {}
 
+        try {
+            document.getElementById('deleteModal').classList.add('show');
+            document.getElementById('deleteModal').style.display = 'block';
+        } catch (e) {}
+    };
 
-    // Handle delete form submission via AJAX
-    $(document).on('submit', '#deleteForm', function(e) {
+    // Delete form submit
+    document.getElementById('deleteForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
 
-        let form = this;
-        let url = $(form).attr('action');
-        let $btn = $(form).find('button[type="submit"]');
-        let originalText = $btn.html();
+        const btn = this.querySelector('button[type="submit"]');
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Deleting...';
 
-        $btn.html('<i class="fas fa-spinner fa-spin"></i> Deleting...').prop('disabled', true);
+        const url = this.action;
 
-        $.ajax({
-            url: url,
-            method: 'POST', // Laravel spoofing DELETE
-            data: {
-                _token: $('input[name="_token"]').val(),
-                _method: 'DELETE'
-            },
-            success: function(res) {
+        fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: '_method=DELETE'
+            })
+            .then(r => r.json())
+            .then(res => {
                 if (res.success) {
-                    // Remove the row from the table
-                    let row = document.querySelector(`tr[data-service-time-id="${res.id}"]`);
-                    if (row) row.remove();
+                    // Row remove karo
+                    document.querySelector(`tr[data-service-time-id="${id}"]`)?.remove();
 
-                    // Show toast
-                    Toast.fire({
-                        icon: 'success',
-                        title: res.message || 'Service time deleted successfully!'
-                    });
-
-                    $('#deleteModal').modal('hide');
-
-                    // Optional: show "No Service Times Found" row if table empty
-                    if ($('#serviceTimesTable tr').length === 0) {
-                        $('#serviceTimesTable').html(`
-                        <tr id="noServiceTimesRow">
-                            <td colspan="11" class="text-center py-5">
-                                <div>
-                                    <i class="fas fa-clock fa-5x text-muted mb-4 opacity-50"></i>
-                                    <h4 class="text-muted fw-light">No Service Times Found</h4>
-                                    <p class="text-muted">Add service times linked to events</p>
-                                    <button class="btn btn-outline-primary px-4" onclick="location.reload()">
-                                        <i class="fas fa-sync-alt me-2"></i>Refresh
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `);
+                    // Success message
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success('Deleted successfully!');
+                    } else {
+                        alert('Deleted!');
                     }
-                } else {
-                    Toast.fire({
-                        icon: 'error',
-                        title: res.message || 'Delete failed!'
-                    });
+
+                    // Modal band karo
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                    if (modal) modal.hide();
                 }
-            },
-            error: function(xhr) {
-                Toast.fire({
-                    icon: 'error',
-                    title: xhr.responseJSON?.message || 'Delete failed!'
-                });
-            },
-            complete: function() {
-                $btn.html(originalText).prop('disabled', false);
-            }
-        });
+            })
+            .catch(() => {
+                alert('Delete failed!');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = original;
+            });
     });
 </script>
 
