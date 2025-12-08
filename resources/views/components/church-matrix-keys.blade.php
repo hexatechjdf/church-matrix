@@ -7,7 +7,7 @@
      <div class="row">
          <!-- Church Matrix API -->
          <div class="col-lg-6">
-             <form action="{{ route('church-matrix.save-api') }}" method="POST">
+             <form action="{{ route('church-matrix.save-api') }}" method="POST" data-res="regions" class="form-submit">
                  @csrf
                  <div class="card-modern">
                      <div class="card-header-modern info">
@@ -48,17 +48,17 @@
                  <div class="card-header-modern success">
                      <h5>Region Selection</h5>
                  </div>
-
-                 <div class="card-body-modern">
-                     <div class="alert-modern">
-                         <div class="content">
-                             <strong>Important</strong>
-                             Please save your Church Matrix API credentials first before selecting a region.
+                 <form action="{{ route('church-matrix.save-region') }}" method="POST" class="form-submit">
+                     @csrf
+                     <div class="card-body-modern">
+                         <div class="alert-modern">
+                             <div class="content">
+                                 <strong>Important</strong>
+                                 Please save your Church Matrix API credentials first before selecting a region.
+                             </div>
                          </div>
-                     </div>
 
-                     <form action="{{ route('church-matrix.save-region') }}" method="POST">
-                         @csrf
+
                          <div class="form-group">
                              <label class="form-label">
                                  Select Region <span class="required">*</span>
@@ -76,13 +76,13 @@
                                  @endif
                              </select>
                          </div>
-                 </div>
+                     </div>
 
-                 <div class="card-footer-modern">
-                     <button type="submit" class="btn-modern btn-success" disabled>
-                         <span>Save Region</span>
-                     </button>
-                 </div>
+                     <div class="card-footer-modern">
+                         <button type="submit" class="btn-modern btn-success">
+                             <span>Save Region</span>
+                         </button>
+                     </div>
                  </form>
              </div>
          </div>
@@ -93,10 +93,10 @@
                      <div class="card-header-modern warning  bg-warning">
                          <h5>Subaccount</h5>
                      </div>
+                     <form action="{{ route('church-matrix.save-location') }}" method="POST" class="form-submit">
+                         @csrf
+                         <div class="card-body-modern">
 
-                     <div class="card-body-modern">
-                         <form action="{{ route('church-matrix.save-location') }}" method="POST">
-                             @csrf
                              <div class="form-group">
                                  <label for="location_id">Location ID <span class="text-danger">*</span></label>
                                  <input type="text" class="form-control @error('location_id') is-invalid @enderror"
@@ -106,13 +106,13 @@
                                      <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
                                  @enderror
                              </div>
-                     </div>
+                         </div>
 
-                     <div class="card-footer-modern">
-                         <button type="submit" class="btn-modern btn-warning">
-                             <span>Save</span>
-                         </button>
-                     </div>
+                         <div class="card-footer-modern">
+                             <button type="submit" class="btn-modern btn-warning">
+                                 <span>Save</span>
+                             </button>
+                         </div>
                      </form>
                  </div>
              </div>

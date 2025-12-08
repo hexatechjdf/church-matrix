@@ -497,7 +497,6 @@ function _tokens_renew()
         save_setting('planning_access_token',$new_access_token,$uid);
         save_setting('planning_refresh_token',$new_refresh_token,$uid);
 
-
     }
       else
       {
@@ -509,11 +508,59 @@ function _tokens_renew()
 }
 
 
-function getChurchToken()
+function getChurchToken($mytoken = null,$id=null)
 {
-    $user = loginUser(1);
+    $user = loginUser($id);
+
+    if($mytoken)
+    {
+        return $user->churchToken ?? null;
+    }
 
     $user = $user->church_admin ? $user : loginUser(1);
 
     return $user->churchToken ?? null;
 }
+
+
+function parseLinks($header)
+{
+    $pages = [
+        'next' => null,
+        'prev' => null
+    ];
+
+    if ($header) {
+        $links = explode(',', $header);
+        foreach ($links as $link) {
+            // Check for next
+            if (strpos($link, "rel='next'") !== false) {
+                preg_match('/<([^>]+)>/', $link, $matches);
+                if (!empty($matches[1])) {
+                    $query = parse_url($matches[1], PHP_URL_QUERY);
+                    parse_str($query, $params);
+                    $pages['next'] = $params['page'] ?? null;
+                }
+            }
+
+            // Check for prev
+            if (strpos($link, "rel='prev'") !== false) {
+               $pages['prev'] = matchLink($key,$link, $matches,$params);
+            }
+        }
+    }
+
+    return $pages;
+}
+
+function matchLink($key,$link, $matches,$params)
+{
+    preg_match('/<([^>]+)>/', $link, $matches);
+    if (!empty($matches[1])) {
+        $query = parse_url($matches[1], PHP_URL_QUERY);
+        parse_str($query, $params);
+        return $params['page'] ?? null;
+    }
+    return null;
+}
+

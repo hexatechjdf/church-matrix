@@ -5,16 +5,78 @@ namespace App\Http\Controllers\Location\Churchmatrix;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChurchEvent;
-use App\Services\ChurchEventService;
+use App\Services\ChurchService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ChurchEventController extends Controller
 {
     protected $service;
 
-    public function __construct(ChurchEventService $service)
+    public function __construct(ChurchService $service)
     {
         $this->service = $service;
+    }
+
+    public function index(Request $request)
+    {
+
+        return view('locations.churchmatrix.events.index');
+        dd(123);
+        try {
+            $campusId = $request->campus_id;
+            $page     = $request->page ?? 1;
+            $perPage  = 2;
+
+            $cacheKey = "events_{$campusId}_page_{$page}";
+
+            // Cache for 10 minutes
+            $apiEvents = Cache::remember($cacheKey, 600, function () use ($campusId, $page, $perPage) {
+
+                $params = [
+                    'campus_id' => $campusId,
+                    'page'      => $page,
+                    'per_page'  => $perPage,
+                ];
+
+                $url = "events.json";
+                list($data, $apiEvents) = $this->service->request('GET', $url, $params, true);
+
+                // Parse Link Header for pagination
+                $linkHeader = $data['headers']['Link'] ?? null;
+                $pages = $this->parseLinks($linkHeader);
+
+                return collect($apiEvents)->map(function ($event) use ($pages) {
+                    return [
+                        'id'         => $event['id'],
+                        'name'       => $event['name'],
+                        'next'       => $pages['next'] ?? null,
+                        'prev'       => $pages['prev'] ?? null,
+                        'created_at' => now(),
+                    ];
+                })->toArray();
+
+            });
+
+            // Return JSON for front-end
+            return response()->json([
+                'data' => $apiEvents,
+                'next' => $apiEvents[0]['next'] ?? null,
+                'prev' => $apiEvents[0]['prev'] ?? null,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'data' => [],
+                'next' => null,
+                'prev' => null
+            ]);
+        }
+    }
+
+    public function getEvents(Request $request)
+    {
+
     }
 
     public function store(Request $request)

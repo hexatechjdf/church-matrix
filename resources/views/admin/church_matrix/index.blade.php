@@ -28,19 +28,8 @@
             <h5 class="mb-0"><i class="fas fa-table mr-2"></i>Saved API & Location Data</h5>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>#</th>
-                            <th>User Email</th>
-                            <th>Location ID</th>
-                            <th>API Key</th>
-                            <th>Region</th>
-                        </tr>
-                    </thead>
+            <div class="table-responsive " id="tokenTableContainer">
 
-                </table>
             </div>
         </div>
     </div>
@@ -172,3 +161,37 @@
         </div>
     </div> --}}
 @endsection
+@push('script')
+
+    <script>
+        let page = '';
+        $(document).ready(function(e) {
+            page = '{{ route('church-matrix.request.listing') }}';
+            fetchTokens(page);
+        });
+
+        $(document).on('click', '.pagination a', function(e) {
+            e.preventDefault();
+
+            page = $(this).attr('href'); // full URL mil jayega
+            fetchTokens(page);
+        });
+
+        function fetchTokens(url = null) {
+            url = url ?? page;
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function(data) {
+                    $("#tokenTableContainer").html(data);
+                },
+                error: function() {
+                    toastr.error("Failed to load data");
+                }
+            });
+        }
+    </script>
+
+    @include('components.submit-form')
+
+@endpush

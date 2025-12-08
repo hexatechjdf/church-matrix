@@ -49,7 +49,7 @@ class GetRecordsCampusJob implements ShouldQueue
 
     }
 
-    public function processPage($campus_id, $page, $churchService)
+    public function processPage($campus_id, $page, $churchService,$url = 'records.json',$perpage = 100)
     {
         $params = [
             'campus_id' => $campus_id,
@@ -70,65 +70,9 @@ class GetRecordsCampusJob implements ShouldQueue
         $l = @$linkHeader[0] ?? null;
 
         \Log::info($l);
-        $next = $this->parseLinks($l);
+        $pages = \parseLinks($l);
 
-        return $next ?: null;
+        return @$pages['next'] ?: null ;
     }
 
-    public function getRecords($campus_id,$churchService)
-    {
-        $page = 1;
-        $per_page = 2;
-        $all = [];
-
-        while (true) {
-            $params = [
-                'campus_id' => $campus_id,
-                'page'      => $page,
-                'per_page'  => $per_page,
-            ];
-            $url = "records.json";
-            list($data,$linkHeader) = $churchService->request('GET', $url, $params,true);
-
-            $d = [];
-            if(!$data)
-            {
-                break;
-            }
-
-            $all = array_merge($all, $data);
-            $l  = @$linkHeader[0] ?? null;
-            if (!$l) {
-                break;
-            }
-            $page = $this->parseLinks($l);
-            if (!$page || $page == '' || empty($page)) {
-                break;
-            }
-        }
-
-        return $all;
-    }
-
-    private function parseLinks($header)
-    {
-        if ($header) {
-            $links = explode(',', $header);
-            $nextPage = null;
-            foreach ($links as $link) {
-                if (strpos($link, "rel='next'") !== false) {
-                    preg_match('/<([^>]+)>/', $link, $matches);
-                    if (!empty($matches[1])) {
-                        $nextUrl = $matches[1];
-                        $query = parse_url($nextUrl, PHP_URL_QUERY);
-                        parse_str($query, $params);
-                        $nextPage = $params['page'] ?? null;
-                    }
-                }
-            }
-
-            return $nextPage;
-        }
-        return null;
-    }
 }
