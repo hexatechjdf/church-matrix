@@ -522,6 +522,15 @@ function getChurchToken($mytoken = null,$id=null)
     return $user->churchToken ?? null;
 }
 
+function getUserTimeZone($id=null)
+{
+    $user = loginUser($id);
+
+    $user = $user->timezone ? $user : loginUser(1);
+
+    return $user->timezone ?? 'London';
+}
+
 
 function parseLinks($header)
 {
@@ -532,20 +541,17 @@ function parseLinks($header)
 
     if ($header) {
         $links = explode(',', $header);
+
         foreach ($links as $link) {
-            // Check for next
+
+            // next page
             if (strpos($link, "rel='next'") !== false) {
-                preg_match('/<([^>]+)>/', $link, $matches);
-                if (!empty($matches[1])) {
-                    $query = parse_url($matches[1], PHP_URL_QUERY);
-                    parse_str($query, $params);
-                    $pages['next'] = $params['page'] ?? null;
-                }
+                $pages['next'] = matchLink($link);
             }
 
-            // Check for prev
+            // prev page
             if (strpos($link, "rel='prev'") !== false) {
-               $pages['prev'] = matchLink($key,$link, $matches,$params);
+                $pages['prev'] = matchLink($link);
             }
         }
     }
@@ -553,14 +559,18 @@ function parseLinks($header)
     return $pages;
 }
 
-function matchLink($key,$link, $matches,$params)
+
+function matchLink($link)
 {
-    preg_match('/<([^>]+)>/', $link, $matches);
-    if (!empty($matches[1])) {
+    if (preg_match('/<([^>]+)>/', $link, $matches)) {
         $query = parse_url($matches[1], PHP_URL_QUERY);
-        parse_str($query, $params);
-        return $params['page'] ?? null;
+
+        if ($query) {
+            parse_str($query, $params);
+            return $params['page'] ?? null;
+        }
     }
+
     return null;
 }
 

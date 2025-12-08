@@ -1,6 +1,9 @@
+
+@php($active = $active ?? null)
+@php($campuses = $campuses ?? null)
 <div class="modules-grid">
 
-    <div class="module-card active" data-module="events" data-url="{{ route('locations.churchmatrix.events.index') }}">
+    <div class="module-card {{ $active == 'events' ? 'active' : '' }}" data-module="events" data-url="{{ route('locations.churchmatrix.integration.events.index') }}">
         <div class="icon-wrapper events">
             <i class="fas fa-calendar-check module-icon"></i>
         </div>
@@ -11,8 +14,8 @@
         <i class="fas fa-chevron-right module-arrow"></i>
     </div>
 
-    <div class="module-card" data-module="service-times"
-        data-url="{{ route('locations.churchmatrix.service-times.index') }}">
+    <div class="module-card {{ $active == 'times' ? 'active' : '' }}" data-module="service-times"
+        data-url="{{ route('locations.churchmatrix.integration.service-times.index') }}">
         <div class="icon-wrapper service">
             <i class="fas fa-clock module-icon"></i>
         </div>
@@ -23,7 +26,7 @@
         <i class="fas fa-chevron-right module-arrow"></i>
     </div>
 
-    <div class="module-card" data-module="records" data-url="{{ route('locations.churchmatrix.records.index') }}">
+    <div class="module-card {{ $active == 'records' ? 'active' : '' }}" data-module="records" data-url="{{ route('locations.churchmatrix.integration.records.index') }}">
         <div class="icon-wrapper records">
             <i class="fas fa-database module-icon"></i>
         </div>
@@ -35,11 +38,12 @@
     </div>
 </div>
 
+@if($campuses)
 <div class="card">
     <div class="card-body">
         <label for="campus_id">Campus</label>
-        <select name="campus_id" id="campus_id" class="form-control select2">
-            @foreach ($campuses as $campus)
+        <select name="" id="campus_id" class="form-control select2">
+            @foreach (@$campuses ?? [] as $campus)
                 <option value="{{ $campus['id'] }}">
                     {{ $campus['name'] }}
                 </option>
@@ -47,6 +51,7 @@
         </select>
     </div>
 </div>
+@endif
 
 @push('script')
     <script>

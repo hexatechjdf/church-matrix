@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use App\Models\CrmToken;
+use Illuminate\Support\Facades\Cache;
 
 class ChurchService
 {
@@ -23,6 +24,45 @@ class ChurchService
             'access_token' => $data['church_matrix_user'],
             'refresh_token'  => $data['church_matrix_api'],
         ]);
+    }
+
+    public function fetchEvents()
+    {
+        $cacheKey = 'church_events';
+        return Cache::remember($cacheKey, 60*60, function() {
+            $url = "events.json";
+            list($data, $apiEvents) = $this->request('GET', $url, [], true);
+
+            return $data;
+        });
+    }
+
+    public function fetchCampuses($id = null)
+    {
+        $user = loginUser($id);
+        $campuses = [];
+        if($user->church_admin)
+        {
+            $t = getChurchToken('location',$user->id);
+            $cacheKey = "campuses_{$user->id}";
+            $campuses = Cache::remember($cacheKey, 600, function () use ($t) {
+                $url = "campuses.json";
+                list($data, $linkHeader) = $this->request('GET', $url, [], true,$t);
+                return collect($data)->map(function ($event) {
+                    return [
+                        'id'         => $event['id'],
+                        'name'       => $event['slug'],
+                        'created_at' => now(),
+                    ];
+                })->toArray();
+            });
+        }else{
+            $c = $suer->campus;
+            $campuses['id'] = $c->campus_unique_id;
+            $campuses['name'] = $c->name;
+        }
+
+        return $campuses;
     }
 
     public function fetchRegions($crm=null)
@@ -77,6 +117,7 @@ class ChurchService
             else {
                 throw new \Exception("Unsupported HTTP method: $method");
             }
+
             $r =  $response->successful() ? $response->json() : false;
             return $header_required ? [$r,@$response->getHeader('Link')] : $r;
 

@@ -54,7 +54,8 @@
             border-radius: 3px;
             box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
         }
-        .left-sidenav .topbar-left .logo .logo-lg{
+
+        .left-sidenav .topbar-left .logo .logo-lg {
             height: 65px !important;
         }
     </style>
@@ -409,6 +410,22 @@
             }, 2000);
 
         }
+    </script>
+    <script>
+        $(document).on('click', '.btn-close', function(e) {
+            e.preventDefault();
+
+            $(this).closest('.modal').modal('hide');
+        })
+
+
+        $(document).on('click', '.module-card', function(e) {
+            e.preventDefault();
+
+            let url = $(this).data('.url');
+
+            window.location.href = url;
+        })
     </script>
     @stack('js')
     @stack('script')

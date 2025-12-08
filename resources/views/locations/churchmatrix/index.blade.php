@@ -32,7 +32,7 @@
                                 <option value="">-- Choose Timezone --</option>
                                 @foreach ($timezones as $tz => $label)
                                 <option value="{{ $tz }}"
-                                    {{ (@$settings->timezone ?? '') == $tz ? 'selected' : '' }}>
+                                    {{ (@$user->timezone ?? '') == $tz ? 'selected' : '' }}>
                                     {{ $label }}
                                 </option>
                                 @endforeach

@@ -10,7 +10,7 @@
                     <i class="mdi mdi-plus-circle-outline mr-2"></i>Integration</a> --}}
 
 
-                <a href="{{ route('locations.churchmatrix.intergration.events.index') }}"
+                <a href="{{ route('locations.churchmatrix.integration.events.index') }}"
                     class="btn btn-gradient-primary px-4 mt-0 mb-3 {{ request()->routeIs('locations.churchmatrix.integration*') ? 'active-tab' : '' }}">
                     <i class="mdi mdi-plus-circle-outline mr-2"></i>Integration</a>
             </div>

@@ -39,7 +39,7 @@ class ChurchEventController extends Controller
                     'per_page'  => $perPage,
                 ];
 
-                $url = "events.json";
+                $url = "service_times.json";
                 list($data, $apiEvents) = $this->service->request('GET', $url, $params, true);
 
                 // Parse Link Header for pagination
@@ -76,6 +76,35 @@ class ChurchEventController extends Controller
 
     public function getEvents(Request $request)
     {
+
+        $events = $this->service->fetchEvents();
+
+        return response()->json([
+            'data' => $events
+        ]);
+    }
+
+    public function manage(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+
+        $body = [
+            'name' => $request->name,
+        ];
+        $url = $request->id ? 'events/'.$request->id.'.json' : 'events.json';
+        $method = $request->id ? 'PUT' : 'POST';
+
+        list($data, $apiEvents) = $this->service->request($method, $url, $body, true);
+
+        Cache::forget('church_events');
+
+        return response()->json([
+             'success' => true,
+             'message' => 'Event created on Church Metrics!',
+             'event' => $data
+        ]);
 
     }
 
@@ -125,19 +154,14 @@ class ChurchEventController extends Controller
 
     public function destroy($cm_id)
     {
-        $success = $this->service->deleteEventOnAPI($cm_id);
+        list($data, $apiEvents) = $this->service->request('DELETE','events/'.$cm_id.'.json', [], true);
 
-        if ($success) {
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Event permanently deleted from ChurchMetrics!'
-            ]);
-        }
+        Cache::forget('church_events');
 
         return response()->json([
-            'success' => false,
-            'message' => 'Failed to delete from ChurchMetrics. Try again.'
-        ], 500);
+             'success' => true,
+             'message' => 'Event deletd on Church Metrics!',
+             'event' => $data
+        ]);
     }
 }
