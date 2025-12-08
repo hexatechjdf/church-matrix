@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Location\Planning;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Services\planningService;
+use App\Services\PlanningService;
 use App\Models\CrmToken;
 
 class PlanningController extends Controller

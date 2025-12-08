@@ -259,20 +259,22 @@ Route::get('/tokens_renew', function () {
 //     return "Sync completed!";
 // });
 
-use App\Services\planningService;
+use App\Services\PlanningService;
 use App\Models\CrmToken;
 
 
 Route::get('/get-head-counts', function(PlanningService $service){
-   $t = CrmToken::where('id', 7)->first();
+   $t = CrmToken::where('id', 1)->first();
    $planning = @$t->access_token;
 
    $request = new Request();
     $request->merge([
-        'user_id' => 886,
+        'user_id' => 884,
         // agar aur fields chahiye to yahan add kar dein
     ]);
    $w = $service->planning_api_call('check-ins/v2/event_times', 'get', '', [], false, $planning);
 
    dd($w);
 });
+
+

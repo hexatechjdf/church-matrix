@@ -14,7 +14,7 @@ class PlanningService
         $type = 'planning_access_token';
         $baseurl = $this->base;
 
-        $user_id  = request()->user_id ?? 886;
+        $user_id  = request()->user_id ?? 884;
         $user = loginUser($user_id);
 
         $crm = $crm ?? $user->planningToken;
@@ -54,6 +54,7 @@ class PlanningService
 
         if (($bd && property_exists($bd, 'errors') && is_array($bd->errors) && count($bd->errors)>0 && property_exists($bd->errors[0],'code') && strtolower($bd->errors[0]->code) == 'unauthorized') || $isaccessdenied) {
             $refresh_token = $crm->refresh_token;
+            dd($bd);
 
             $lck=Cache::lock('planning_cache_lock_'.$user_id,40);
             $is_refresh=false;
@@ -125,7 +126,8 @@ class PlanningService
             "grant_type" => empty($type) ? "authorization_code" : "refresh_token",
             $codekey => $code,
             "client_id" => getAccessToken('planning_client_id'),
-            "client_secret" => getAccessToken('planning_client_sceret'),
+            // "client_secret" => getAccessToken('planning_client_sceret'),
+            "client_secret" => getAccessToken('planning_client_secret'),
             "redirect_uri" => route('planningcenter.callback') . "?location_id=" . request()->location_id
         ];
         $options['body'] = json_encode($data);
