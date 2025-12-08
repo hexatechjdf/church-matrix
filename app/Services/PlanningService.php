@@ -54,7 +54,7 @@ class PlanningService
 
         if (($bd && property_exists($bd, 'errors') && is_array($bd->errors) && count($bd->errors)>0 && property_exists($bd->errors[0],'code') && strtolower($bd->errors[0]->code) == 'unauthorized') || $isaccessdenied) {
             $refresh_token = $crm->refresh_token;
-            dd($bd);
+            // dd($bd);
 
             $lck=Cache::lock('planning_cache_lock_'.$user_id,40);
             $is_refresh=false;
