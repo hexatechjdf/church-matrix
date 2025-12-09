@@ -41,7 +41,7 @@ class ChurchService
 
     public function fetchCategories()
     {
-        
+
         $cacheKey = 'church_categories';
         return Cache::remember($cacheKey, 60 * 60, function () {
             $url = "categories.json";

@@ -302,7 +302,6 @@
             </form>
         </div>
     </div>
-</div>
 
 
 @endsection
@@ -330,12 +329,12 @@ $(function() {
                 className: 'text-center',
                 render: function(data) {
                     return `
-                    
+
                          <button class="btn btn-sm rounded-circle shadow-sm me-2"
                             onclick="editEvent(${data.id}, '${data.name}')">
                             <i class="fas fa-edit"></i>
                         </button>
-                    
+
                            <button class="btn btn-sm rounded-circle shadow-sm action-btn"
             data-url="/locations/churchmatrix/integration/events/destroy/${data.id}"
             data-message="You want to delete '${data.name}'?"

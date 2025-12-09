@@ -42,12 +42,11 @@
     <div class="card-body">
         <label for="campus_id">Campus</label>
         <select name="" id="campus_id" class="form-control select2">
-            @foreach($campuses ?? [] as $campus)
-            <option value="{{ $campus->id ?? '' }}">
-                {{ $campus->name ?? '' }}
-            </option>
+            @foreach (@$campuses ?? [] as $campus)
+                <option value="{{ $campus['id'] }}">
+                    {{ $campus['name'] }}
+                </option>
             @endforeach
-
         </select>
     </div>
 </div>
