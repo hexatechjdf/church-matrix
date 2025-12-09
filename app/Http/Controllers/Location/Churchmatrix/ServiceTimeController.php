@@ -18,7 +18,7 @@ class ServiceTimeController extends Controller
         $this->service = $service;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $campuses = $this->service->fetchCampuses();
         $events = $this->service->fetchEvents();
@@ -29,11 +29,18 @@ class ServiceTimeController extends Controller
     public function getTimes(Request $request)
     {
         try {
-            $campusId = "137883" ?? $request->campus_id;
+
             $page     = $request->page ?? 1;
             $perPage  = $request->per_page ?? 10;
 
             $cacheKey = "service_timessss_{$campusId}_page_{$page}";
+
+             $params = [
+                    'page'      => $page,
+                    'per_page'  => $perPage,
+                ];
+
+                dd($params);
 
             $apiData = Cache::remember($cacheKey, 600, function () use ($campusId, $page, $perPage) {
 
@@ -42,6 +49,8 @@ class ServiceTimeController extends Controller
                     'page'      => $page,
                     'per_page'  => $perPage,
                 ];
+
+                dd($params);
 
                 $url = "service_times.json";
 

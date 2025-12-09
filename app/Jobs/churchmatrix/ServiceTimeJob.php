@@ -9,22 +9,23 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\ChurchService;
-use App\Jobs\churchmatrix\ManageRecordsJob;
 
-class GetRecordsCampusJob implements ShouldQueue
+class ServiceTimeJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $cam_id;
+    public $user_id;
+    public $is_saved;
     public $page;
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($cam_id,$page = 1)
+    public function __construct($user_id,$is_saved = false,$page = 1)
     {
-        $this->cam_id = $cam_id;
+        $this->is_saved = $is_saved;
+        $this->user_id = $user_id;
         $this->page = $page;
     }
 
@@ -35,7 +36,8 @@ class GetRecordsCampusJob implements ShouldQueue
      */
     public function handle(ChurchService $churchService)
     {
-        $campus_id = $this->cam_id;
+        $id = $this->user_id;
+        $table = $this->is_saved;
         $page = $this->page;
 
         try {
@@ -52,7 +54,6 @@ class GetRecordsCampusJob implements ShouldQueue
     public function processPage($campus_id, $page, $churchService,$url = 'records.json',$perpage = 100)
     {
         $params = [
-            'campus_id' => $campus_id,
             'page'      => $page,
             'per_page'  => 2,
         ];
@@ -71,5 +72,4 @@ class GetRecordsCampusJob implements ShouldQueue
 
         return @$pages['next'] ?: null ;
     }
-
 }

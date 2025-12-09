@@ -272,7 +272,7 @@ Route::get('/get-head-counts', function (PlanningService $service) {
 
     $request = new Request();
     $request->merge([
-        'user_id' => 884,
+        'user_id' => 886,
         // agar aur fields chahiye to yahan add kar dein
     ]);
     $w = $service->planning_api_call('check-ins/v2/event_times?include=event,headcounts', 'get', '', [], false, $planning);
