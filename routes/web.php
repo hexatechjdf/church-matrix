@@ -183,26 +183,26 @@ Route::prefix('locations')->name('locations.')->group(function () {
             Route::get('/', [SettingIntergration::class, 'index'])->name('index');
         });
 
-        Route::prefix('intergration')->name('intergration.')->group(function () {
+        Route::prefix('integration')->name('integration.')->group(function () {
             Route::prefix('events')->name('events.')->group(function () {
                 Route::get('/', [ChurchEventController::class, 'index'])->name('index');
-                Route::post('/store', [ChurchEventController::class, 'store'])->name('store');
-                Route::put('/{id}', [ChurchEventController::class, 'update'])->name('update');
-                Route::delete('/{id}', [ChurchEventController::class, 'destroy'])->name('destroy');
+                Route::get('/get/events', [ChurchEventController::class, 'getEvents'])->name('data');
+                Route::post('/manage', [ChurchEventController::class, 'manage'])->name('manage')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+                Route::post('destroy/{id}', [ChurchEventController::class, 'destroy'])->name('destroy')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
             });
-        });
 
+            Route::prefix('service-times')->name('service-times.')->group(function () {
+                Route::get('/', [ServiceTimeController::class, 'index'])->name('index');
+                Route::get('/get/times', [ServiceTimeController::class, 'getTimes'])->name('data');
+                Route::post('/manage', [ServiceTimeController::class, 'manage'])->name('manage')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+                Route::post('destroy/{id}', [ServiceTimeController::class, 'destroy'])->name('destroy')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+            });
 
-        Route::prefix('service-times')->name('service-times.')->group(function () {
-            Route::get('/', [ServiceTimeController::class, 'index'])->name('index');
-            Route::post('/store', [ServiceTimeController::class, 'store'])->name('store');
-            Route::put('/{serviceTime}', [ServiceTimeController::class, 'update'])->name('update');
-        });
-
-        Route::prefix('records')->name('records.')->group(function () {
-            Route::get('/', [RecordController::class, 'index'])->name('index');
-            Route::get('/create', [RecordController::class, 'create'])->name('create');
-            Route::post('/store', [RecordController::class, 'store'])->name('store');
+            Route::prefix('records')->name('records.')->group(function () {
+                Route::get('/', [RecordController::class, 'index'])->name('index');
+                Route::get('/create', [RecordController::class, 'create'])->name('create');
+                Route::post('/store', [RecordController::class, 'store'])->name('store');
+            });
         });
     });
 
@@ -266,18 +266,16 @@ use App\Services\PlanningService;
 use App\Models\CrmToken;
 
 
-Route::get('/get-head-counts', function(PlanningService $service){
-   $t = CrmToken::where('id', 4)->first();
-   $planning = @$t->access_token;
+Route::get('/get-head-counts', function (PlanningService $service) {
+    $t = CrmToken::where('id', 5)->first();
+    $planning = @$t->access_token;
 
-   $request = new Request();
+    $request = new Request();
     $request->merge([
         'user_id' => 884,
         // agar aur fields chahiye to yahan add kar dein
     ]);
-   $w = $service->planning_api_call('check-ins/v2/event_times', 'get', '', [], false, $planning);
+    $w = $service->planning_api_call('check-ins/v2/event_times?include=event,headcounts', 'get', '', [], false, $planning);
 
-   dd($w);
+    dd($w);
 });
-
-

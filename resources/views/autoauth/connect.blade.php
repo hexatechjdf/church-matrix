@@ -15,11 +15,11 @@
 
             let params = new URLSearchParams(location.search);
             let dt = {
-                location: params.get('location_id') || "",
-                token: params.get('sessionkey') || "",
+                location: params.get('location_id') || params.get('locationid') || "",
+                token: params.get('sessionkey') ||params.get('sessionKey') || "",
                 web: params.get('web') || "",
             }
-
+            console.log(params,dt);
             if ((dt.token ?? "") != "" && (dt.location ?? "") != "") {
                 checkForauth(dt);
             }

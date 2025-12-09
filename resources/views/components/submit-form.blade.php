@@ -4,6 +4,7 @@
         let form = $(this);
         let url = form.attr('action');
         let res = form.data('res');
+        let data_table = form.data('table');
         let method = form.attr('method') || 'POST';
 
         let submitBtn = form.find('button[type=submit]');
@@ -30,6 +31,10 @@
                 if (res == 'regions') {
                     automatRegions(response.regions);
                 }
+
+                if(data_table) {
+                    $(`#${data_table}`).DataTable().ajax.reload();
+                }
             },
 
             error: function(xhr) {
@@ -41,7 +46,6 @@
                     return;
                 }
 
-                // Other Errors
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     toastr.error(xhr.responseJSON.message);
                 } else {
@@ -81,6 +85,7 @@
         let submitBtn = $(this);
         let originalText = $(this).text();
         let funcName = $(this).data('function');
+        let data_table =  $(this).data('table');
 
         Swal.fire({
             title: "Are you sure?",
@@ -102,6 +107,10 @@
                         toastr.success(successMsg || res.message);
                         if (funcName && typeof window[funcName] === 'function') {
                             window[funcName]();
+                        }
+
+                        if(data_table) {
+                            $(`#${data_table}`).DataTable().ajax.reload();
                         }
                     },
                     error: function() {

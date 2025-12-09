@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use App\Models\CrmToken;
+use Illuminate\Support\Facades\Cache;
 
 class ChurchService
 {
@@ -11,13 +12,14 @@ class ChurchService
     {
         $user = loginUser();
         $ty = $user->role == 0 ? 'admin' : 'location';
-        if($ty == 'location')
-        {
-           $user->church_admin = false;
-           $user->save();
+        if ($ty == 'location') {
+            $user->church_admin = false;
+            $user->save();
         }
-        return CrmToken::updateOrCreate(['user_id' => $user->id,
-            'crm_type' => 'church'],[
+        return CrmToken::updateOrCreate([
+            'user_id' => $user->id,
+            'crm_type' => 'church'
+        ], [
             'location_id' => $user->location,
             'user_type' => $ty,
             'access_token' => $data['church_matrix_user'],
@@ -25,9 +27,59 @@ class ChurchService
         ]);
     }
 
-    public function fetchRegions($crm=null)
+    public function fetchEvents()
     {
-        return $this->request('GET', 'regions.json',[],false,$crm);
+        $cacheKey = 'church_events';
+        return Cache::remember($cacheKey, 60 * 60, function () {
+            $url = "events.json";
+            list($data, $apiEvents) = $this->request('GET', $url, [], true);
+
+            return $data;
+        });
+    }
+
+
+    public function fetchCategories()
+    {
+        
+        $cacheKey = 'church_categories';
+        return Cache::remember($cacheKey, 60 * 60, function () {
+            $url = "categories.json";
+            list($data, $apiEvents) = $this->request('GET', $url, [], true);
+
+            return $data;
+        });
+    }
+    public function fetchCampuses($id = null)
+    {
+        $user = loginUser($id);
+        $campuses = [];
+        if ($user->church_admin) {
+            $t = getChurchToken('location', $user->id);
+            $cacheKey = "campuses_{$user->id}";
+            $campuses = Cache::remember($cacheKey, 600, function () use ($t) {
+                $url = "campuses.json";
+                list($data, $linkHeader) = $this->request('GET', $url, [], true, $t);
+                return collect($data)->map(function ($event) {
+                    return [
+                        'id'         => $event['id'],
+                        'name'       => $event['slug'],
+                        'created_at' => now(),
+                    ];
+                })->toArray();
+            });
+        } else {
+            $c = @$user->campus;
+            $campuses['id'] = @$c->campus_unique_id;
+            $campuses['name'] = @$c->name;
+        }
+
+        return $campuses;
+    }
+
+    public function fetchRegions($crm = null)
+    {
+        return $this->request('GET', 'regions.json', [], false, $crm);
     }
 
     public function saveChurchSetting($id, $key)
@@ -43,7 +95,7 @@ class ChurchService
     }
 
 
-   public function request($method, $url, $data = [],$header_required = false,$crm = null)
+    public function request($method, $url, $data = [], $header_required = false, $crm = null)
     {
         $baseurl = 'https://churchmetrics.com/api/v1/';
         $endpoint = $baseurl . $url;
@@ -61,27 +113,22 @@ class ChurchService
 
             if (strtoupper($method) === 'GET') {
                 $response = $client->get($endpoint, $data);
-            }
-            else if (strtoupper($method) === 'POST') {
+            } else if (strtoupper($method) === 'POST') {
                 $response = $client->post($endpoint, $data);
-            }
-            else if (strtoupper($method) === 'PUT') {
+            } else if (strtoupper($method) === 'PUT') {
                 $response = $client->put($endpoint, $data);
-            }
-            else if (strtoupper($method) === 'PATCH') {
+            } else if (strtoupper($method) === 'PATCH') {
                 $response = $client->patch($endpoint, $data);
-            }
-            else if (strtoupper($method) === 'DELETE') {
+            } else if (strtoupper($method) === 'DELETE') {
                 $response = $client->delete($endpoint);
-            }
-            else {
+            } else {
                 throw new \Exception("Unsupported HTTP method: $method");
             }
-            $r =  $response->successful() ? $response->json() : false;
-            return $header_required ? [$r,@$response->getHeader('Link')] : $r;
 
+            $r =  $response->successful() ? $response->json() : false;
+            return $header_required ? [$r, @$response->getHeader('Link')] : $r;
         } catch (\Exception $e) {
-            \Log::error("ChurchMetrics API error: ".$e->getMessage());
+            \Log::error("ChurchMetrics API error: " . $e->getMessage());
             return false;
         }
     }

@@ -65,9 +65,13 @@ class ChurchMatrixController extends Controller
             'timezone' => 'required|string'
         ]);
 
-        $this->service->saveChurchSetting($request->timezone,'timezone');
+        $user = loginUser();
+        $user->timezone = $request->timezone;
+        $user->save();
 
-        return response()->json(['seccess' => 'Timezone updated successfully!']);
+        // $this->service->saveChurchSetting($request->timezone,'timezone');
+
+        return response()->json(['success' => 'Timezone updated successfully!']);
     }
 
     public function requestlisting(Request $request)

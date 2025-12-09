@@ -1,255 +1,417 @@
-<div class="container-fluid px-4 py-3">
+@extends('layouts.location')
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1 text-dark fw-bold">
-                <i class="text-primary me-3"></i>Service Times
-            </h2>
-            <p class="text-muted mb-0">Manage all service times linked to events</p>
-        </div>
+@section('title', 'Settings')
 
-        <button class="btn btn-lg btn-primary shadow-lg rounded-pill px-4"
-            onclick="openAddServiceTimeModal()">
-            <i class="fas fa-plus me-2"></i>Add Service Time
-        </button>
-    </div>
+@push('css')
+    <link rel="stylesheet" href="{{ asset('css/setting_integration.css') }}">
+    <style>
+        .settings-container {
+            max-width: 1300px;
+        }
 
-    <div class="card border-0 shadow-lg rounded-4 overflow-hidden"
-        style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
 
-        <div class="card-header bg-gradient-primary text-white border-0 py-4">
-            <h4 class="mb-0 fw-bold">
-                <i class="me-3"></i>All Service Times
-            </h4>
-        </div>
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
 
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4 fw-bold text-dark">#</th>
-                            <th class="fw-bold text-dark">Campus</th>
-                            <th class="fw-bold text-dark">Day</th>
-                            <th class="fw-bold text-dark">Time</th>
-                            <th class="fw-bold text-dark">Timezone</th>
-                            <th class="fw-bold text-dark">Relation</th>
-                            <th class="fw-bold text-dark">Start Date</th>
-                            <th class="fw-bold text-dark">End Date</th>
-                            <th class="fw-bold text-dark">Replaces</th>
-                            <th class="fw-bold text-dark">Event</th>
-                            <th class="text-center fw-bold text-dark">Actions</th>
-                        </tr>
-                    </thead>
+        .module-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
 
-                    <tbody id="serviceTimesTable">
-                        @php
-                        $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-                        @endphp
+        .module-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
 
-                        @forelse($serviceTimes as $time)
-                        @php
-                        $time = (object) $time;
-                        $time->event = isset($time->event) ? (object) $time->event : null;
-                        $time->campus = isset($time->campus) ? (object) $time->campus : null;
-                        @endphp
-                        <tr class="border-start border-4 border-primary"
-                            data-service-time-id="{{ $time->id }}"
-                            data-cm-id="{{ $time->cm_id ?? '' }}">
-                            <td class="ps-4 fw-bold text-primary">{{ $loop->iteration }}</td>
-                            <td>{{ $time->campus->slug ?? $time->campus_id ?? 'N/A' }}</td>
-                            <td>{{ $days[$time->day_of_week] ?? $time->day_of_week }}</td>
-                            <td>{{ \Carbon\Carbon::parse($time->time_of_day)->format('h:i A') }}</td>
-                            <td>{{ $time->timezone ?? 'N/A' }}</td>
-                            <td>{{ $time->relation_to_sunday ?? 'N/A' }}</td>
-                            <td>{{ $time->date_start ?? 'N/A' }}</td>
-                            <td>{{ $time->date_end ?? 'N/A' }}</td>
-                            <td>{{ isset($time->replaces) ? ($time->replaces ? 'Yes' : 'No') : 'N/A' }}</td>
-                            <td>{{ $time->event->name ?? 'N/A' }}</td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2"
-                                    onclick='editServiceTime(@json($time))'>
-                                    <i class="fas fa-edit"></i>
-                                </button>
+        .module-card.active {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
 
+        .stats-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #10b981;
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+        }
 
-                                <button type="button"
-                                    class="btn btn-sm btn-danger rounded-circle shadow-sm"
-                                    onclick="deleteServiceTime({{ $time->id }}, '{{ addslashes($time->event?->name ?? 'Service Time') }}')">
-                                    <i class="fas fa-trash"></i> </button>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr id="noServiceTimesRow">
-                            <td colspan="11" class="text-center py-5">
-                                <div>
-                                    <i class="fas fa-clock fa-5x text-muted mb-4 opacity-50"></i>
-                                    <h4 class="text-muted fw-light">No Service Times Found</h4>
-                                    <p class="text-muted">Add service times linked to events</p>
-                                    <button class="btn btn-outline-primary px-4" onclick="location.reload()">
-                                        <i class="fas fa-sync-alt me-2"></i>Refresh
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        .icon-wrapper {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .icon-wrapper.events {
+            background: #ede9fe;
+        }
+
+        .icon-wrapper.service {
+            background: #fce7f3;
+        }
+
+        .icon-wrapper.records {
+            background: #dbeafe;
+        }
+
+        .module-icon {
+            font-size: 1.75rem;
+        }
+
+        .icon-wrapper.events .module-icon {
+            color: #8b5cf6;
+        }
+
+        .icon-wrapper.service .module-icon {
+            color: #ec4899;
+        }
+
+        .icon-wrapper.records .module-icon {
+            color: #3b82f6;
+        }
+
+        .module-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .module-desc {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .module-arrow {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            color: #9ca3af;
+        }
+
+        .module-content-area {
+            display: none;
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .module-content-area.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+@endpush
+
+@section('content')
+
+    <div class="settings-container">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="h3 mb-0">All Service Times</h1>
+                <p class="text-muted mb-0">Manage all Service Times synced from Church Metrics</p>
             </div>
+            <div> @include('button.index') </div>
         </div>
 
-    </div>
-</div>
 
+        @include('locations.components.modulegrid', ['active' => 'times', 'campuses' => $campuses])
 
-<!-- Delete Modal (Yeh bilkul yeh hi use karo) -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+
+                <button class="btn btn-lg btn-primary shadow-lg rounded-pill px-4" data-toggle="modal"
+                    data-target="#serviceTimeModal" onclick="openAddServiceTimeModal()">
+                    <i class="fas fa-plus me-2"></i>Add New
+                </button>
             </div>
-            <div class="modal-body text-center py-5">
-                <i class="fas fa-trash-alt fa-4x text-danger mb-4"></i>
-                <h4>Delete Service Time?</h4>
-                <p class="text-muted">
-                    "<strong id="deleteEventName" class="text-danger"></strong>"
-                    will be deleted <strong class="text-danger">permanently</strong>.
-                </p>
 
-                <form id="deleteForm" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <input type="hidden" id="deleteUrl" value="">
-                    <div class="mt-4">
-                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger px-5">Yes, Delete</button>
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden"
+                style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
+
+                <div class="card-header bg-gradient-primary text-white border-0 py-4">
+                    <h4 class="mb-0 fw-bold">
+                        <i class="me-3"></i>All Service Times
+                    </h4>
+                </div>
+
+                <div class="card-body p-0">
+
+                    <div id="eventsTableContainer" class="p-3">
+                        <table class="table table-hover align-middle mb-0" id="serviceTimesTable">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Campus</th>
+                                    <th>Day</th>
+                                    <th>Time</th>
+                                    <th>Timezone</th>
+                                    <th>Relation</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
-                </form>
+
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-@include('locations.churchmatrix.service_times.add')
-@include('locations.churchmatrix.service_times.edit')
+    <div class="modal fade" id="serviceTimeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow-lg">
+
+                <form id="addServiceTimeForm"
+                    action="{{ route('locations.churchmatrix.integration.service-times.manage') }}" method="POST" class="form-submit">
+                    @csrf
+                    <input type="hidden" name="campus_id" class="campus_id" value=""> <!-- Static campus -->
+                    <input type="hidden" name="service_time_id" id="service_time_id">
+                    <input type="hidden" id="modal_mode" value="create">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="serviceModalTitle">Service Time</h5>
+                        <button type="button" class="btn-close  btn btn-danger btn-sm" data-bs-dismiss="modal">x</button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+                            <label>Day of Week</label>
+                            <select name="day_of_week" class="form-control" required>
+                                <option value="0">Sunday</option>
+                                <option value="1">Monday</option>
+                                <option value="2">Tuesday</option>
+                                <option value="3">Wednesday</option>
+                                <option value="4">Thursday</option>
+                                <option value="5">Friday</option>
+                                <option value="6">Saturday</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Time</label>
+                            <input type="time" name="time_of_day" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Start Date</label>
+                            <input type="date" name="date_start" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>End Date</label>
+                            <input type="date" name="date_end" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Event (Optional)</label>
+                            <select name="event_id" class="form-control">
+                                <option value="">-- Select Event --</option>
+                                @foreach (@$events ?? [] as $event)
+                                    <option value="{{ $event['id'] ?? '' }}">{{ $event['name'] ?? 'N/A' }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            <span id="serviceModalBtnText">Add Service Time</span>
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
 
 
 
-<script>
-    function openAddServiceTimeModal() {
-        $('#addServiceTimeModal').modal('show');
-        $('#modalTitle').html('<i class="fas fa-plus-circle me-3"></i>Add Service Time');
-        $('#saveBtnText').text('Save Service Time');
+@endsection
 
-        $('#serviceTimeForm')[0].reset();
+@push('script')
+    @include('components.submit-form')
+    <script>
+        $(document).ready(function() {
 
-    }
+            let currentPage = 1;
+            const perPage = 2;
 
-    function editServiceTime(serviceTime) {
-        // Populate modal fields
-        $('#edit_service_time_id').val(serviceTime.id);
-        $('#edit_day_of_week').val(serviceTime.day_of_week);
+            function loadServiceTimes(page = 1) {
 
-        // Extract HH:MM from ISO datetime string
-        $('#edit_time_of_day').val(serviceTime.time_of_day ? serviceTime.time_of_day.substring(11, 16) : '');
+                const campusId = $('#campus_id').val() || null;
 
-        $('#edit_date_start').val(serviceTime.date_start || '');
-        $('#edit_date_end').val(serviceTime.date_end || '');
-        $('#edit_replaces').val(serviceTime.replaces ? 1 : 0);
-        $('#edit_event_id').val(serviceTime.event?.id || '');
+                $.ajax({
+                    url: "{{ route('locations.churchmatrix.integration.service-times.data') }}",
+                    type: 'GET',
+                    data: {
+                        campus_id: campusId,
+                        page,
+                        per_page: perPage
+                    },
 
-        // Set the form action dynamically
-        const updateUrl = `{{ route('locations.churchmatrix.service-times.update', ':id') }}`.replace(':id', serviceTime.id);
-        $('#editServiceTimeForm').attr('action', updateUrl);
+                    success: function(res) {
 
-        // Show modal
-        $('#editServiceTimeModal').modal('show');
-    }
+                        $("#custom-pagination").remove();
 
-    window.deleteServiceTime = function(id, name) {
-        // Name set karo
-        document.getElementById('deleteEventName').textContent = name || 'Service Time';
+                        let tbody = $('#serviceTimesTable tbody');
+                        tbody.empty();
 
-        // Form ka action set karo
-        document.getElementById('deleteForm').action = '/service-times/' + id;
+                        if (res.data.length === 0) {
+                            tbody.append(
+                                '<tr><td colspan="11" class="text-center py-5">No service times found</td></tr>'
+                            );
+                            return;
+                        }
 
-        // Modal kholo — 3 tarike se (ek bhi ho to chalega)
-        try {
-            $('#deleteModal').modal('show'); // jQuery way
-        } catch (e) {}
+                        res.data.forEach((time, idx) => {
+                            tbody.append(`
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${time.campus || 'N/A'}</td>
+                        <td>${time.day || 'N/A'}</td>
+                        <td>${time.time || 'N/A'}</td>
+                        <td>${time.timezone || 'N/A'}</td>
+                        <td>${time.relation || 'N/A'}</td>
+                        <td>${time.date_start || 'N/A'}</td>
+                        <td>${time.date_end || 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2"
+                                onclick='editServiceTime(${JSON.stringify(time)})'>
+                                <i class="fas fa-edit"></i>
+                            </button>
 
-        try {
-            var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            modal.show(); // Bootstrap 5 pure JS
-        } catch (e) {}
+                            <button class="btn btn-sm btn-danger rounded-circle shadow-sm action-btn"
+                                data-url="/locations/churchmatrix/integration/service-times/destroy/${time.id}"
+                                data-message="You want to delete '${time.event || 'Service Time'}'?"
+                                data-success="Service Time deleted!"
+                                data-function="loadServiceTimes">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `);
+                        });
 
-        try {
-            document.getElementById('deleteModal').classList.add('show');
-            document.getElementById('deleteModal').style.display = 'block';
-        } catch (e) {}
-    };
+                        let pagination = `
+                <div id="custom-pagination" class="d-flex justify-content-between mt-3">
+                    <button id="prevBtn" class="btn btn-sm btn-primary"
+                        ${!res.prev ? 'disabled' : ''}
+                        onclick="goToPage(${page - 1})">Prev</button>
 
-    // Delete form submit
-    document.getElementById('deleteForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
+                    <span>Page ${page}</span>
 
-        const btn = this.querySelector('button[type="submit"]');
-        const original = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = 'Deleting...';
+                    <button id="nextBtn" class="btn btn-sm btn-primary"
+                        ${!res.next ? 'disabled' : ''}
+                        onclick="goToPage(${page + 1})">Next</button>
+                </div>
+            `;
 
-        const url = this.action;
-
-        fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: '_method=DELETE'
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    // Row remove karo
-                    document.querySelector(`tr[data-service-time-id="${id}"]`)?.remove();
-
-                    // Success message
-                    if (typeof toastr !== 'undefined') {
-                        toastr.success('Deleted successfully!');
-                    } else {
-                        alert('Deleted!');
+                        $('#serviceTimesTable').after(pagination);
+                        currentPage = page;
                     }
+                });
+            }
 
-                    // Modal band karo
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
-                    if (modal) modal.hide();
-                }
-            })
-            .catch(() => {
-                alert('Delete failed!');
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = original;
+            function goToPage(page) {
+                $("#prevBtn, #nextBtn").prop("disabled", true).text("Loading...");
+                loadServiceTimes(page);
+            }
+
+            window.loadServiceTimes = loadServiceTimes;
+            window.goToPage = goToPage;
+
+            $(document).ready(function() {
+                loadServiceTimes(currentPage);
             });
-    });
-</script>
 
-<style>
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    }
 
-    tr:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
+            window.openAddServiceTimeModal = function() {
+                $('#service_time_id').val('');
+                $('#modal_mode').val('create');
+                let i = $('#campus_id').val();
+                $('.campus_id').val(i);
+                $('select[name="day_of_week"]').val('0');
+                $('input[name="time_of_day"]').val('');
+                $('input[name="date_start"]').val('');
+                $('input[name="date_end"]').val('');
+                $('select[name="event_id"]').val('');
 
-    .btn:hover {
-        transform: translateY(-3px);
-        transition: 0.3s ease;
-    }
-</style>
+                $('#serviceModalTitle').text('Add Service Time');
+                $('#serviceModalBtnText').text('Add Service Time');
+
+                $('#serviceTimeModal').modal('show');
+            }
+
+            window.editServiceTime = function(data) {
+                console.log(data);
+                $('#modal_mode').val('edit');
+                $('#service_time_id').val(data.id);
+                let i = $('#campus_id').val();
+                $('.campus_id').val(i);
+
+                // Correct field names
+                $('select[name="day_of_week"]').val(String(data.day)); // day instead of day_of_week
+
+                // Convert time to proper format for input[type="time"]
+                let timeValue = data.time && data.time !== 'N/A' ? new Date(data.time).toISOString().slice(11,
+                    16) : '';
+                $('input[name="time_of_day"]').val(timeValue);
+
+                $('input[name="date_start"]').val(data.date_start !== 'N/A' ? data.date_start : '');
+                $('input[name="date_end"]').val(data.date_end !== 'N/A' ? data.date_end : '');
+                $('select[name="event_id"]').val(data.event_id ?? '');
+
+                $('#serviceModalTitle').text('Edit Service Time');
+                $('#serviceModalBtnText').text('Update Service Time');
+
+                $('#serviceTimeModal').modal('show');
+            }
+
+        });
+    </script>
+@endpush
