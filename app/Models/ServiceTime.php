@@ -19,7 +19,9 @@ class ServiceTime extends Model
         'date_start',
         'date_end',
         'replaces',
-        'event_id'
+        'event_id',
+        'event_name',
+        'campus_name',
     ];
 
     public function event()

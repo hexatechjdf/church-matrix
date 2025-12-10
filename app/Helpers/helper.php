@@ -9,6 +9,7 @@ use GuzzleHttp\Psr7\Request as Psr7Request;
 use Illuminate\Http\Client\Request;
 use PhpParser\Node\Stmt\TryCatch;
 use App\Helpers\gCache;
+use Carbon\Carbon;
 
 use Illuminate\Support\Facades\Cache;
 
@@ -574,3 +575,25 @@ function matchLink($link)
     return null;
 }
 
+function days()
+{
+    return [
+        0 => 'Sunday',
+        1 => 'Monday',
+        2 => 'Tuesday',
+        3 => 'Wednesday',
+        4 => 'Thursday',
+        5 => 'Friday',
+        6 => 'Saturday',
+    ];
+}
+
+
+function customDateTime($d,$f = 'H:i:s' )
+{
+    try{
+        return Carbon::parse($d)->format($f);
+    }catch(\Exception $e){
+    }
+    return $d;
+}

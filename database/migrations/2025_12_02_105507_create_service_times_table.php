@@ -27,7 +27,6 @@ class CreateServiceTimesTable extends Migration
             $table->unsignedBigInteger('event_id')->nullable();
             $table->timestamps();
 
-            $table->foreign('event_id')->references('id')->on('church_events')->onDelete('cascade');
         });
     }
 

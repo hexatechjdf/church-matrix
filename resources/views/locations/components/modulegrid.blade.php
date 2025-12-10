@@ -37,7 +37,7 @@
     </div>
 </div>
 
-@if($campuses)
+{{-- @if($campuses)
 <div class="card">
     <div class="card-body">
         <label for="campus_id">Campus</label>
@@ -50,7 +50,7 @@
         </select>
     </div>
 </div>
-@endif
+@endif --}}
 
 @push('script')
 <script>

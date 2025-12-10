@@ -47,8 +47,32 @@ class ChurchService
             $url = "categories.json";
             list($data, $apiEvents) = $this->request('GET', $url, [], true);
 
-            return $data;
+            $d = $this->manageCategoryGroups($data);
+
+            return $d;
         });
+    }
+
+    public function manageCategoryGroups($records)
+    {
+        $grouped = [];
+
+        foreach ($records as $item) {
+            if ($item['parent_id'] === null) {
+                $grouped[$item['id']] = [
+                    'parent' => $item,
+                    'children' => []
+                ];
+            }
+        }
+
+        foreach ($records as $item) {
+            if ($item['parent_id'] !== null) {
+                $grouped[$item['parent_id']]['children'][] = $item;
+            }
+        }
+
+        return $grouped;
     }
     public function fetchCampuses($id = null)
     {
@@ -124,6 +148,8 @@ class ChurchService
             } else {
                 throw new \Exception("Unsupported HTTP method: $method");
             }
+
+            // dd($response->json() );
 
             $r =  $response->successful() ? $response->json() : false;
             return $header_required ? [$r, @$response->getHeader('Link')] : $r;

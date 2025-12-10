@@ -194,14 +194,16 @@ Route::prefix('locations')->name('locations.')->group(function () {
             Route::prefix('service-times')->name('service-times.')->group(function () {
                 Route::get('/', [ServiceTimeController::class, 'index'])->name('index');
                 Route::get('/get/times', [ServiceTimeController::class, 'getTimes'])->name('data');
+                Route::get('/get/form', [ServiceTimeController::class, 'getForm'])->name('form');
                 Route::post('/manage', [ServiceTimeController::class, 'manage'])->name('manage')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
                 Route::post('destroy/{id}', [ServiceTimeController::class, 'destroy'])->name('destroy')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
             });
 
             Route::prefix('records')->name('records.')->group(function () {
                 Route::get('/', [RecordController::class, 'index'])->name('index');
-                Route::get('/create', [RecordController::class, 'create'])->name('create');
-                Route::post('/store', [RecordController::class, 'store'])->name('store');
+                Route::get('/get/form', [RecordController::class, 'getForm'])->name('form');
+                Route::get('/get/service-times', [RecordController::class, 'getTimesPaginated'])->name('service-times');
+                Route::post('/manage', [RecordController::class, 'manage'])->name('manage')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
             });
         });
     });

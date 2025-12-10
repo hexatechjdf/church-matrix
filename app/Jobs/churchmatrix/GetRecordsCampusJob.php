@@ -54,10 +54,9 @@ class GetRecordsCampusJob implements ShouldQueue
         $params = [
             'campus_id' => $campus_id,
             'page'      => $page,
-            'per_page'  => 2,
+            'per_page'  => $perpage,
         ];
 
-        $url = "records.json";
         list($data, $linkHeader) = $churchService->request('GET', $url, $params, true);
 
         if (!$data) {

@@ -36,14 +36,25 @@ class ServiceTimeJob implements ShouldQueue
      */
     public function handle(ChurchService $churchService)
     {
-        $id = $this->user_id;
+        $id    = $this->user_id;
         $table = $this->is_saved;
-        $page = $this->page;
+        $page  = $this->page;
+
+        $crm = \getChurchToken(null,$id);
 
         try {
-            $nextPage = $this->processPage($campus_id, $page, $churchService);
+            $nextPage = $this->processPage($page, $churchService,$crm,$table,$id);
             if ($nextPage) {
-                dispatch(new self($campus_id, $nextPage));
+                if ($table) {
+                    dispatch(new self($id, $table ,$nextPage));
+                } else {
+                    dispatch_sync(new self($id, $table ,$nextPage));
+                }
+            } else if (!$table) {
+                $key = "service_time_temp_$id";
+                $all = cache()->get($key, []);
+
+                return $all;
             }
         } catch (\Exception $e) {
             \Log::error($e);
@@ -51,24 +62,29 @@ class ServiceTimeJob implements ShouldQueue
 
     }
 
-    public function processPage($campus_id, $page, $churchService,$url = 'records.json',$perpage = 100)
+    public function processPage($page, $churchService,$crm,$table,$id,$url = 'service_times.json',$perpage = 3)
     {
         $params = [
             'page'      => $page,
-            'per_page'  => 2,
+            'per_page'  => $perpage,
         ];
 
-        $url = "records.json";
-        list($data, $linkHeader) = $churchService->request('GET', $url, $params, true);
+        list($data, $linkHeader) = $churchService->request('GET', $url, $params, true,$crm);
 
         if (!$data) {
             return null;
         }
 
-        dispatch((new ManageRecordsJob($data)))->delay(5);
+        if ($table) {
+            dispatch(new ManageServiceTimeJob($data,$id));
+        } else {
+            dispatch_sync(new ManageServiceTimeJob($data,$id,false));
+        }
+
         $l = @$linkHeader[0] ?? null;
 
         $pages = \parseLinks($l);
+        \Log::info($pages);
 
         return @$pages['next'] ?: null ;
     }
