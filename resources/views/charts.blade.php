@@ -50,6 +50,8 @@
     </div>
 
     <div class="chart-container">
+        <div id="barWidth_1"></div>
+
           <div id="chart"></div>
         <!-- <div class="chart-wrapper"><canvas id="myChart"></canvas> -->
 
