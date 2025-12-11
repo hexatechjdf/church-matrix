@@ -50,6 +50,10 @@
     </div>
 
     <div class="chart-container">
-        <div class="chart-wrapper"><canvas id="myChart"></canvas></div>
+          <div id="chart"></div>
+        <!-- <div class="chart-wrapper"><canvas id="myChart"></canvas> -->
+
+          
+        </div>
     </div>
 </div>

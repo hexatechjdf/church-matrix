@@ -275,7 +275,24 @@ Route::get('/get-head-counts', function (PlanningService $service) {
         'user_id' => 884,
         // agar aur fields chahiye to yahan add kar dein
     ]);
-    $w = $service->planning_api_call('check-ins/v2/event_times?include=event,headcounts', 'get', '', [], false, $planning);
+    $w = $service->planning_api_call('check-ins/v2/event_times?include=event,headcounts&per_page=50', 'get', '', [], false, $planning);
 
     dd($w);
 });
+
+Route::get('/get-attendance-type', function (PlanningService $service) {
+    $t = CrmToken::where('id', 5)->first();
+    $planning = @$t->access_token;
+
+    $request = new Request();
+    $request->merge([
+      'user_id' => 884,
+    ]);
+    $w = $service->planning_api_call('check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-11-28', 'get', '', [], false, $planning);
+
+    dd($w);
+});
+
+//https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-12-01
+//https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[updated_at]=2025-12-01
+
