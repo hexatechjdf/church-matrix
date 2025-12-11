@@ -174,23 +174,24 @@ class PlanningService
         }
     }
 
-    public function getHeadcounts($createdDate = null, $updatedDate = null, $token = null)
+    public function getHeadcounts($offset, $token = null,$filter = null)
     {
-        $url = "check-ins/v2/headcounts?include=attendance_type,event_time,event&per_page=1000";
-
+        $url = "check-ins/v2/headcounts?include=attendance_type,event_time,event&per_page=1000&offset=".$offset;
+       
         $query = [];
+        if($filter){
 
-        if ($createdDate) {
-            $query['where[created_at]'] = $createdDate;
+            foreach($filter as $key=>$value){
+                $query['where'.$key] = $value;
+            }
+            
         }
-
-        if ($updatedDate) {
-            $query['where[updated_at]'] = $updatedDate;
-        }
+        
 
         if (!empty($query)) {
             $url .= "&" . http_build_query($query);
         }
+        //  dd($url);
 
         return $this->planning_api_call($url, 'get', '', [], false, $token);
     }

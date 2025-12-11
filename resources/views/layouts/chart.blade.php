@@ -230,13 +230,14 @@
     </style>
 </head>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/billboard.js/dist/billboard.min.css">
-<body>
-@yield('content')
-<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-  <script src="https://cdn.jsdelivr.net/npm/billboard.js/dist/billboard.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
 
-  <script>
+<body>
+    @yield('content')
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/billboard.js/dist/billboard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+
+    <script>
         let currentDate = new Date();
         // const chartCtx = document.getElementById('myChart').getContext('2d');
         // const chart = new Chart(chartCtx, {
@@ -298,84 +299,84 @@
 
             const res = await fetch(`/charts/data?${params}`);
             const result = await res.json();
-const allValues = _(result.json)
-  .groupBy("month_year")
-  .map((items, month) => {
-    const base = {
-      month_year: month,
-      first_created_date: items[0].first_created_date
-    };
+            const allValues = _(result.json)
+                .groupBy("month_year")
+                .map((items, month) => {
+                    const base = {
+                        month_year: month,
+                        first_created_date: items[0].first_created_date
+                    };
 
-    // Add dynamic keys
-    items.forEach(i => {
-      base[i.attendance_id] = i.attendance_count;
-    });
+                    // Add dynamic keys
+                    items.forEach(i => {
+                        base[i.attendance_id] = i.attendance_count;
+                    });
 
-    return base;
-  })
-  .value();
+                    return base;
+                })
+                .value();
 
-console.log(result);
-             const chart = bb.generate({
+            console.log(result);
+            const chart = bb.generate({
                 size: {},
-      data: {
-        
-        json: allValues,
-		keys: {
-x: result.keys.name,
-			value: result.keys.values
-		},
-groups: [
-     result.keys.values
-    ],
-        type: "bar" // smooth line
-        
-      },
-  tooltip: {
-    contents: function (data, defaultTitleFormat, defaultValueFormat, color) {
-      
-console.log(data);
-      // find original json row
-      data  =data.filter(t=>t.value!=null);
+                data: {
 
-let row = chart.config().data.json[data[0].x][result.keys.name];
+                    json: allValues,
+                    keys: {
+                        x: result.keys.name,
+                        value: result.keys.values
+                    },
+                    groups: [
+                        result.keys.values
+                    ],
+                    type: "bar" // smooth line
 
-    const total = data.reduce((sum, val) => sum + val.value, 0);
-      let html = `<table class="bb-tooltip"><tbody>`;
-      html += `<tr><th colspan="2">${row}</th></tr>`;
+                },
+                tooltip: {
+                    contents: function(data, defaultTitleFormat, defaultValueFormat, color) {
 
-      // Show normal dataset values
-      data.forEach(d => {
-        html += `
+                        console.log(data);
+                        // find original json row
+                        data = data.filter(t => t.value != null);
+
+                        let row = chart.config().data.json[data[0].x][result.keys.name];
+
+                        const total = data.reduce((sum, val) => sum + val.value, 0);
+                        let html = `<table class="bb-tooltip"><tbody>`;
+                        html += `<tr><th colspan="2">${row}</th></tr>`;
+
+                        // Show normal dataset values
+                        data.forEach(d => {
+                            html += `
           <tr>
             <td style="color:${color(d)}">${d.id}</td>
             <td>${d.value}</td>
           </tr>
         `;
-      });
+                        });
 
-      // Add custom TOTAL row
-      html += `
+                        // Add custom TOTAL row
+                        html += `
         <tr style="font-weight:bold;">
           <td>Total</td>
           <td>${total}</td>
         </tr>
       `;
 
-      html += `</tbody></table>`;
-      return html;
-    }
-  },
-      axis: {
-			x: {
-				 type: "category"
-			}
-		},
-      point: {
-        r: 4 // size of points
-      },
-      bindto: "#chart"
-    });
+                        html += `</tbody></table>`;
+                        return html;
+                    }
+                },
+                axis: {
+                    x: {
+                        type: "category"
+                    }
+                },
+                point: {
+                    r: 4 // size of points
+                },
+                bindto: "#chart"
+            });
 
             // chart.data.labels = result.labels;
             // chart.data.datasets = result.datasets;
@@ -448,9 +449,8 @@ let row = chart.config().data.json[data[0].x][result.keys.name];
         document.getElementById('eventFilter').addEventListener('change', loadChartData);
 
         // Initial render
-        
+
         loadChartData();
-        
     </script>
 
 </body>
