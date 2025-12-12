@@ -10,6 +10,7 @@ use App\Services\ChurchService;
 use App\Jobs\churchmatrix\ServiceTimeJob;
 use Carbon\Carbon;
 use App\Models\ServiceTime;
+use App\Models\ChurchRecord;
 use App\Jobs\churchmatrix\SendCategoryValueToApi;
 
 class RecordController extends Controller
@@ -23,173 +24,179 @@ class RecordController extends Controller
 
     public function index(Request $request)
     {
-        // $campuses   = $this->service->fetchCampuses();
-        // $events     = $this->service->fetchEvents();
-        // $categories = $this->service->fetchCategories();
+        $user = loginUser();
 
         if ($request->ajax()) {
-            $records = DB::table('church_records')->orderBy('id', 'DESC');
+
+           $records = ChurchRecord::when(!$user->church_admin,function($q)use($user){
+                $campus = @$user->campus;
+                $q->where('campus_id', $campus->campus_unique_id);
+            })->when($user->church_admin,function($q)use($user){
+                $q->where('user_id', $user->id);
+            })->orderBy('id', 'DESC');
 
             return DataTables::of($records)
                 ->editColumn('service_date_time', fn($r) => Carbon::parse($r->service_date_time)->format('d M Y'))
                 ->make(true);
-            // Actions column ab blade mein banega → controller clean rahega
         }
 
-        return view('locations.churchmatrix.records.index');
+        return view('locations.churchmatrix.records.index',get_defined_vars());
     }
 
     public function getForm(Request $request)
     {
+        $user = loginUser();
         $categories = $this->service->fetchCategories();
-        $campuses   = $this->service->fetchCampuses();
-        $events     = $this->service->fetchEvents();
-
-        $mode = $request->mode;
         $id = $request->id;
-        $payload = $request->payload;
-        $serviceTime = null;
-
-
-        if ($mode === 'edit' && $request->id) {
-            $serviceTime = ServiceTime::find($request->id);
+        $selectedCategoryId = null;
+        $selectedValue = null;
+        $payload = null;
+        if ($id) {
+            $payload = ChurchRecord::where('record_unique_id', $id)->first();
+            $selectedCategoryId = $payload->category_unique_id;
+            $selectedValue = $payload->value;
         }
 
-        $view =  view('locations.churchmatrix.records.form', get_defined_vars())->render();
 
-        return response()->json(['html' => $view]);
+        return view('locations.churchmatrix.records.form',get_defined_vars())->render();
     }
 
-    public function getTimesPaginated(Request $request)
+    public function getServiceTime($user,$id)
     {
-        $user = loginUser();
-        $search = $request->get('search', '');
-        $page   = $request->get('page', 1);
-        $limit  = 100;
+        if (!$user->church_admin) {
+            $r =  ServiceTime::where('id',$id)->first();
+            return $r ? $r->toArray() : [];
+        }else{
+            $all = $this->service->getCacheTimes($user);
 
-        // 1. Church Admin → DB pagination (BEST)
-        if ($user->church_admin) {
-
-            $query = ServiceTime::query();
-
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('time_of_day', 'LIKE', "%$search%")
-                    ->orWhere('time_of_day', 'LIKE', "%$search%");
-                });
-            }
-
-            $results = $query->paginate($limit, ['*'], 'page', $page);
-
-            return response()->json([
-                "data" => $results->items(),
-                "more" => $results->hasMorePages()
-            ]);
-        }
-
-
-        // 2. Non-admin → cached collection
-        $cacheKey = "service_time_temp_{$user->id}";
-        $all = cache()->get($cacheKey);
-
-        if (empty($all)) {
-            dispatch_sync(new ServiceTimeJob($user->id, false));
-            $all = cache()->get($cacheKey);
-        }
-
-        if (empty($all)) {
-            return response()->json(["data" => [], "more" => false]);
-        }
-
-        $all = collect($all);
-
-        // Apply search on collection
-        if ($search) {
-            $all = $all->filter(function ($st) use ($search) {
-                return str_contains(strtolower($st['time_of_day'] ?? ''), strtolower($search))
-                    || str_contains(strtolower($st['time_of_day'] ?? ''), strtolower($search));
+            $record = collect($all)->first(function($item) use ($id) {
+                $id_match = $id ? ($item['cm_id'] == $id) : true;
+                return $id_match;
             });
+
+            return $record;
         }
-
-        $total = $all->count();
-        $data = $all->slice(($page - 1) * $limit, $limit)->values();
-
-        return response()->json([
-            "data" => $data,
-            "more" => ($page * $limit) < $total
-        ]);
     }
 
     public function manage(Request $request)
     {
-        dd($request->all());
         $user = loginUser();
-        $id              = $request->record_id;
+        $id   = $request->record_id;
+
+        $campus_id = $this->service->getUserCampusId($request,$user);
+        try{
+            if(!$id)
+            {
+                $data  =$this->createApiData($request,$user,$campus_id);
+            }else{
+                $data  =$this->updateApiData($request,$user,$id,$campus_id);
+            }
+            if (!empty($data['errors'])) {
+                $er = $this->handleErrors($data);
+                if($er)
+                {
+                    $id = $this->updateApiData($request,$user,$er,$campus_id);
+                }else{
+                    return response()->json([
+                            'status' => false,
+                            'errors' => $data['errors']
+                        ], 422);
+                }
+            }
+
+            if(@$data['id'] && !$id)
+            {
+                $d = $this->service->setRecordData($user->id,$data);
+                if (!empty($d)) {
+                    DB::table('church_records')->insert($d);
+                }
+            }
+            if($id)
+            {
+                ChurchRecord::where('record_unique_id',$id)->update(['value' => $request->value]);
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully Submitted!',
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'errors' => ['server error']
+            ], 422);
+        }
+    }
+
+    public function createApiData($request,$user,$campus_id)
+    {
         $event_id        = $request->event_id;
         $campus_id       = $request->campus_id;
         $service_time_id = $request->service_time_id;
-        $serviceTimezone = "Central Time (US & Canada)";
-        $serviceDateTime = now()->toISOString();
+        $category_id     = $request->category_id;
+        $value           = $request->value;
+        // $serviceTimezone = "Central Time (US & Canada)";
 
-        $finalPayload = [];
+        $t = $this->getServiceTime($user,$service_time_id);
 
-        foreach ($request->category_values as $categoryId => $value) {
 
-            if (empty($value)) {
-                continue;
+        $servicetime = @$t['complete_time'] ?? now()->toISOString();
+
+        $data = [
+            "category_id"       =>  $category_id,
+            "campus_id"         =>  $campus_id,
+            "service_time_id"   =>  $service_time_id,
+            "value"             =>  $value,
+            "replaces"          =>  true,
+            "event_id"          =>  $event_id,
+        ];
+
+        // $id ? 'records/'.$id.'.json' :
+        return  $this->service->request('POST', 'records.json', $data,false, null,true);
+    }
+
+    public function updateApiData($request,$user,$id,$campus_id)
+    {
+        $value           = $request->value;
+        $campus_id = $this->service->getUserCampusId($request,$user);
+
+        $data = [
+            "value"             =>  $value,
+        ];
+
+        return  $this->service->request('PUT', 'records/'.$id.'.json', $data,false, null,true);
+    }
+
+    public function handleErrors($response)
+    {
+        if (isset($response['errors'])) {
+            $errors = $response['errors'];
+            $errorString = implode(" ", array_map(fn($e) => $e[0], $response['errors']));
+
+            if (stripos($errorString, "already exists") !== false) {
+                preg_match('/with id (\d+)/i', $errorString, $match);
+                return  $match[1] ?? null;
             }
 
-            $data = [
-                "category_id"       => (int) $categoryId,
-                "campus_id"         => (int) $campus_id,
-                "service_time_id"   => (int) $service_time_id,
-                "value"             => (int) $value,
-                "replaces"          => true,
-                "event_id"          => (int) $event_id,
-            ];
-
-            dispatch_sync((new SendCategoryValueToApi($data,$user->id,$id)));
-
-            $finalPayload[] = $data;
+            return false;
         }
+    }
 
-        return 1;
 
-        $url = $request->service_time_id ? 'service_times/'.$request->service_time_id.'.json' : 'service_times.json';
-        $method = $request->id ? 'PUT' : 'POST';
+    public function destroy($cm_id)
+    {
+        $data = $this->service->request('DELETE','records/'.$cm_id.'.json', [], false,null,true);
 
-        list($data, $apiEvents) = $this->service->request($method, $url, $body, true);
-
-        if ($data === false) {
+        if (!empty($data['errors'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'API error occurred while saving service time.'
+                'message' => 'Server error!',
             ]);
         }
-        $user = loginUser();
-        \Log::info($user);
-        if (!$user->church_admin) {
-            if(@$data['id'])
-            {
-                $body['campus_name'] = @$data['campus']['slug'];
-                $body['event_name'] = @$data['event']['name'];
-            }
-            $id = @$data['id'] ?? $request->service_time_id ?? null;
-            \Log::info($id);
-            if($id)
-            {
-                $d = ServiceTime::updateOrCreate(['cm_id' => $id],$body);
-                \Log::info($d);
-            }
-        }else{
-            $cacheKey = "service_time_temp_{$user->id}";
-            Cache::forget($cacheKey);
-        }
 
-
+        ChurchRecord::where('record_unique_id',$cm_id)->delete();
         return response()->json([
-            'success' => true,
-            'message' => 'Service time created successfully!'
+             'success' => true,
+             'message' => 'Deletd on Church Metrics!',
         ]);
     }
 

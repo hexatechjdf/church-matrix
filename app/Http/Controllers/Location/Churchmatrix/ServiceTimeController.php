@@ -9,6 +9,8 @@ use App\Services\ChurchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Jobs\churchmatrix\ServiceTimeJob;
+use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
 
 class ServiceTimeController extends Controller
 {
@@ -21,26 +23,29 @@ class ServiceTimeController extends Controller
 
     public function index(Request $request)
     {
-        return view('locations.churchmatrix.service_times.index');
+        $user = loginUser();
+        return view('locations.churchmatrix.service_times.index',get_defined_vars());
     }
 
     public function getTimes(Request $request)
     {
         $user = loginUser();
-        if (!$user->church_admin) {
-            $query = ServiceTime::get();
+        // || $user->role == 0
+        if (!$user->church_admin ) {
+            $records = ServiceTime::when(!$user->church_admin,function($q)use($user){
+                $campus = @$user->campus;
+                $q->where('campus_id', $campus->campus_unique_id);
+            })->orderBy('id', 'DESC');
 
-            return response()->json([
-                "data" => $query,
-            ]);
+            return DataTables::of($records)
+                ->make(true);
         }
 
         $cacheKey = "service_time_temp_{$user->id}";
-
         $all = cache()->get($cacheKey);
 
         if (empty($all)) {
-            dispatch_sync(new ServiceTimeJob(1, true));
+            dispatch_sync(new ServiceTimeJob($user->id, false));
 
             $all = cache()->get($cacheKey);
         }
@@ -51,7 +56,7 @@ class ServiceTimeController extends Controller
             ]);
         }
 
-        $unique = collect($all)->unique('id')->values();
+        $unique = collect($all)->unique('cm_id')->values();
 
         return response()->json([
             "data" => $unique,
@@ -60,27 +65,48 @@ class ServiceTimeController extends Controller
 
     public function getForm(Request $request)
     {
-        $mode = $request->mode;
-        $id = $request->id;
         $payload = $request->payload;
+        $id = @$payload['cm_id'];
+
         $serviceTime = null;
+        $user = loginUser();
 
-        $campuses = $this->service->fetchCampuses();
-
-        $events = $this->service->fetchEvents();
-
-        if ($mode === 'edit' && $request->id) {
-            $serviceTime = ServiceTime::find($request->id);
+        if ($id) {
+            $serviceTime = ServiceTime::where('cm_id',$request->id);
         }
 
 
-        return view('locations.churchmatrix.service_times.form', compact('serviceTime', 'events', 'mode','campuses','payload'))->render();
+        return view('locations.churchmatrix.service_times.form', compact('serviceTime','payload','user','id'))->render();
     }
 
     public function manage(Request $request)
     {
+        $request->validate([
+            'service_time_id' => 'nullable',
+            'day_of_week'     => 'required',
+            'time_of_day'     => 'required',
+            'event_id'        => 'nullable',
+            'date_start' => 'required_with:event_id|nullable|date',
+            'date_end'   => 'required_with:event_id|nullable|date|after_or_equal:date_start',
+        ]);
+
         $data = $request->all();
         $e = @$data['event_id'];
+
+        $user = loginUser();
+        $campus_id = null;
+        try{
+            $campus_id = $user->church_admin ?  $request->campus_id : @getCampusSession()['campus_id'];
+        }catch(\Exception $e){
+        }
+
+        if(!$campus_id)
+        {
+            return response()->json([
+                'success' => false,
+                'message' => 'API error occurred while saving service time.'
+            ]);
+        }
 
         $body = [
             'day_of_week'        => $data['day_of_week'],
@@ -88,7 +114,7 @@ class ServiceTimeController extends Controller
             'date_start'         => $e ?  @$data['date_start'] : null,
             'date_end'           => $e ? @$data['date_end'] : null,
             'event_id'           => @$data['event_id'] ?? null,
-            'campus_id'          => @$data['campus_id'],
+            'campus_id'          => $campus_id,
             'replaces'           => true,
             'timezone'           => getUserTimeZone(),
         ];
@@ -96,7 +122,7 @@ class ServiceTimeController extends Controller
         $url = $request->service_time_id ? 'service_times/'.$request->service_time_id.'.json' : 'service_times.json';
         $method = $request->id ? 'PUT' : 'POST';
 
-        list($data, $apiEvents) = $this->service->request($method, $url, $body, true);
+        $data = $this->service->request($method, $url, $body);
 
         if ($data === false) {
             return response()->json([
@@ -105,25 +131,21 @@ class ServiceTimeController extends Controller
             ]);
         }
         $user = loginUser();
-        \Log::info($user);
-        if (!$user->church_admin) {
+        if (!$user->church_admin ||  $user->role == 0) {
             if(@$data['id'])
             {
                 $body['campus_name'] = @$data['campus']['slug'];
                 $body['event_name'] = @$data['event']['name'];
             }
             $id = @$data['id'] ?? $request->service_time_id ?? null;
-            \Log::info($id);
             if($id)
             {
                 $d = ServiceTime::updateOrCreate(['cm_id' => $id],$body);
-                \Log::info($d);
             }
         }else{
             $cacheKey = "service_time_temp_{$user->id}";
             Cache::forget($cacheKey);
         }
-
 
         return response()->json([
             'success' => true,
@@ -133,7 +155,15 @@ class ServiceTimeController extends Controller
 
     public function destroy($cm_id)
     {
-        list($data, $apiEvents) = $this->service->request('DELETE','service_times/'.$cm_id.'.json', [], true);
+        $data = $this->service->request('DELETE','service_times/'.$cm_id.'.json', [], false,null,true);
+
+        if (!empty($data['errors'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error!',
+            ]);
+        }
+
         $user = loginUser();
         Cache::forget("service_time_temp_{$user->id}");
         ServiceTime::where('cm_id',$cm_id)->delete();
@@ -141,7 +171,6 @@ class ServiceTimeController extends Controller
         return response()->json([
              'success' => true,
              'message' => 'Deletd on Church Metrics!',
-             'event' => $data
         ]);
     }
 }

@@ -20,10 +20,14 @@ class ChurchMatrixController extends Controller
 
     public function index()
     {
+        $user = loginuser();
+        $timezones = getTimeZones();
         $settings = getChurchToken();
+
         $regions =  $settings ? $this->service->fetchRegions($settings) : null;
 
-        return view('admin.church_matrix.index', compact('settings', 'regions'));
+
+        return view('admin.church_matrix.index', compact('settings', 'regions','timezones','user'));
     }
 
 
@@ -54,7 +58,10 @@ class ChurchMatrixController extends Controller
             'location_id' => 'required|string',
         ]);
 
-        $this->service->saveChurchSetting($request->location_id,'location_id');
+        $user = loginUser();
+        $user->location = $request->location_id;
+        $user->church_admin = 1;
+        $user->save();
 
         return response()->json(['seccess' => 'Location ID saved successfully!']);
     }

@@ -15,42 +15,7 @@
     </div>
 
     <!-- Timezone Settings -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card-modern">
-                <div class="card-header-modern primary">
-                    <h5>Timezone Configuration</h5>
-                </div>
-                <div class="card-body-modern">
-                    <form action="{{ route('church-matrix.save-timezone') }}" method="POST" class="form-submit">
-                        @csrf
-                        <div class="form-group">
-                            <label class="form-label">
-                                Select Timezone <span class="required">*</span>
-                            </label>
-                            <select name="timezone" id="timezone" class="form-control-modern" required>
-                                <option value="">-- Choose Timezone --</option>
-                                @foreach ($timezones as $tz => $label)
-                                <option value="{{ $tz }}"
-                                    {{ (@$user->timezone ?? '') == $tz ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                                @endforeach
-                            </select>
-                            <div class="helper-text">
-                                <span>This will be used for all scheduling and time-based features</span>
-                            </div>
-                        </div>
-                        <div class="card-footer-modern">
-                            <button type="submit" class="btn-modern btn-primary">
-                                <span>Save Timezone</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
      @include('components.church-matrix-keys')
     <!-- API Configuration -->

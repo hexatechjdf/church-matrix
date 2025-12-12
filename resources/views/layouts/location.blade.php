@@ -229,9 +229,10 @@
             height: 100%;
             z-index: 9999999999999999999999;
         }
-
-
-        /* hide the page untill #loadingg */
+        .container-fluid > div{
+            width:100%;
+            max-width: 100%;
+        }
     </style>
     @stack('css')
     @stack('style')
@@ -249,7 +250,7 @@
     <!-- Top Bar End -->
     <div class="page-wrapper">
         <!-- Page Content-->
-        <div class="page-content-tab">
+        <div class="page-content-tab w-100 w-full mt-0">
 
             <div class="container-fluid">
                 @yield('content')

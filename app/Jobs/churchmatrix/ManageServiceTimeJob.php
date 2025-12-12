@@ -44,7 +44,7 @@ class ManageServiceTimeJob implements ShouldQueue
             return [
                 'cm_id'                    => @$record['id'],
                 'day_of_week'    => @$record['day_of_week'],
-                'complate_time'    => @$record['time_of_day'],
+                'complete_time'    => @$record['time_of_day'],
                 'time_of_day'            => $time,
                 'timezone'            => @$record['timezone'],
                 'relation_to_sunday'            => @$record['relation_to_sunday'],
@@ -65,8 +65,10 @@ class ManageServiceTimeJob implements ShouldQueue
         {
             $key = "service_time_temp_{$this->user_id}";
             $existing = cache()->get($key, []);
-            $newData = array_merge($existing, $final);
-            cache()->put($key, $newData, 3600);
+            foreach ($final as $record) {
+                $existing[] = $record;
+            }
+            cache()->put($key, $existing, 3600);
         }else{
             $this->saveRecords($final);
         }

@@ -9,6 +9,8 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Campus;
+use App\Models\User;
+use App\Models\CrmToken;
 use App\Services\ChurchService;
 use Illuminate\Support\Facades\Http;
 use App\Jobs\churchmatrix\GetRecordsCampusJob;
@@ -37,57 +39,40 @@ class ManageCampusJob implements ShouldQueue
      */
     public function handle(ChurchService $churchService)
     {
-        // $this->getRecords('137883');
-         dispatch((new GetRecordsCampusJob('137883')))->delay(5);
-         return;
-        // .....................
         $current_user = $this->user;
+        if(!$current_user)
+        {
+            return;
+        }
+
         $c = Campus::where('user_id',$current_user->id)->first();
         if(!$c)
         {
-            $timezone = get_setting($current_user->id, 'timezone') ?? 'London';
-            $region = get_setting($current_user->id, 'region') ?? '8928';
+            $crm  = \getChurchToken(null,$current_user->id);
+
+            $timezone = $current_user->timezone ?? 'London';
+            $region = @$crm->company_id ?? '8928';
             $data = [
-                "slug" => $current_user->email.'2',
-                "description" => $current_user->email.'3',
+                "slug" => $current_user->email,
+                "description" => $current_user->email,
                 "timezone" => $timezone,
                 "active" => true,
                 "region_id" => $region,
             ];
 
-            // $res = $myService->request('POST', 'campuses.json', $data);
-            $res =  [
-                'id' => 138224,
-                'slug' => '05NesdgGmR3jhRvLBC7A@gmail.com2',
-                'description' => '05NesdgGmR3jhRvLBC7A@gmail.com3',
-                'region_id' => 8928,
-                'timezone' => 'London',
-                'active' => true,
-                'created_at' => '2025-11-28T10:39:44.373Z',
-                'updated_at' => '2025-11-28T10:39:44.373Z',
-                'code_capacity' => NULL,
-                'chair_capacity' => NULL,
-            ];
+            $res = $churchService->request('POST', 'campuses.json', $data,false,$crm);
 
             if($res && isset($res['id']))
             {
                 $data['user_id'] = $current_user->id;
                 $data['location_id'] = $current_user->location;
                 $data['campus_unique_id'] = $res['id'];
+                $data['name'] = $data['slug'];
                 $c = Campus::create($data);
 
-                dispatch((new GetRecordsCampusJob($c->campus_unique_id)))->delay(5);
+                // dispatch((new GetRecordsCampusJob($c->campus_unique_id,$current_user->id)))->delay(5);
             }
-
-
-            // 138224
-
         }
     }
-
-
-    // return collect($apiResponse['errors'] ?? [])
-    // ->flatten()
-    // ->contains("has already been used.");
 
 }

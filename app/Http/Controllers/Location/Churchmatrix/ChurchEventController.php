@@ -20,63 +20,11 @@ class ChurchEventController extends Controller
 
     public function index(Request $request)
     {
-
         return view('locations.churchmatrix.events.index');
-        dd(123);
-        try {
-            $campusId = $request->campus_id;
-            $page     = $request->page ?? 1;
-            $perPage  = 2;
-
-            $cacheKey = "events_{$campusId}_page_{$page}";
-
-            // Cache for 10 minutes
-            $apiEvents = Cache::remember($cacheKey, 600, function () use ($campusId, $page, $perPage) {
-
-                $params = [
-                    'campus_id' => $campusId,
-                    'page'      => $page,
-                    'per_page'  => $perPage,
-                ];
-
-                $url = "service_times.json";
-                list($data, $apiEvents) = $this->service->request('GET', $url, $params, true);
-
-                // Parse Link Header for pagination
-                $linkHeader = $data['headers']['Link'] ?? null;
-                $pages = $this->parseLinks($linkHeader);
-
-                return collect($apiEvents)->map(function ($event) use ($pages) {
-                    return [
-                        'id'         => $event['id'],
-                        'name'       => $event['name'],
-                        'next'       => $pages['next'] ?? null,
-                        'prev'       => $pages['prev'] ?? null,
-                        'created_at' => now(),
-                    ];
-                })->toArray();
-
-            });
-
-            // Return JSON for front-end
-            return response()->json([
-                'data' => $apiEvents,
-                'next' => $apiEvents[0]['next'] ?? null,
-                'prev' => $apiEvents[0]['prev'] ?? null,
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'data' => [],
-                'next' => null,
-                'prev' => null
-            ]);
-        }
     }
 
     public function getEvents(Request $request)
     {
-
         $events = $this->service->fetchEvents();
 
         return response()->json([

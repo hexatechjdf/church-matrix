@@ -192,7 +192,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="eventModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <form id="eventForm" method="POST" data-table="eventsTable"
@@ -227,7 +227,7 @@
                 processing: true,
                 serverSide: false, // All data in one request
                 ajax: "{{ route('locations.churchmatrix.integration.events.data') }}",
-                pageLength: 1, // ✅ Sirf 1 row per page
+                pageLength: 20, // ✅ Sirf 1 row per page
                 columns: [{
                         data: 'name',
                         name: 'name'

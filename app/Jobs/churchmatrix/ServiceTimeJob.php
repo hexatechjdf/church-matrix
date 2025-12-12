@@ -75,16 +75,16 @@ class ServiceTimeJob implements ShouldQueue
             return null;
         }
 
-        if ($table) {
-            dispatch(new ManageServiceTimeJob($data,$id));
-        } else {
-            dispatch_sync(new ManageServiceTimeJob($data,$id,false));
-        }
+        dispatch_sync(new ManageServiceTimeJob($data,$id,$table));
+        // if ($table) {
+        //     dispatch(new ManageServiceTimeJob($data,$id));
+        // } else {
+        //     dispatch_sync(new ManageServiceTimeJob($data,$id,false));
+        // }
 
         $l = @$linkHeader[0] ?? null;
 
         $pages = \parseLinks($l);
-        \Log::info($pages);
 
         return @$pages['next'] ?: null ;
     }

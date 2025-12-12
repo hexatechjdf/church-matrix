@@ -22,7 +22,10 @@ class AutoAuthController extends Controller
             $t = $req->type ?? 'planning';
             if ($req->has('location') && $req->has('token')) {
                 $location = $req->location;
-                $user = User::with('crmtoken')->where('location', $req->location)->first();
+                $user = User::with('crmtoken')->where('location', $req->location)->when($t == 'churchmatrix',function($q){
+                    $q->where('role',0);
+                })->first();
+
                 if (!$user) {
                     $user = new User();
                     $user->name = 'Test User';
@@ -67,20 +70,20 @@ class AutoAuthController extends Controller
                     Auth::login($user);
                 }
 
-
                 $res->is_crm = $res->crm_connected;
                 $res->token_id = encrypt($res->user_id);
 
                 $routes = [
                     'planning' => route('locations.planningcenter.index'),
-                    'churchmatrix' => route('locations.churchmatrix.index'),
+                    'churchmatrix' => route('locations.churchmatrix.integration.events.index'),
                 ];
 
                 $res->route = @$routes[$t] ?? route('auth.planning');
 
-                if($t != 'planning')
+                if($t != 'planning' && $user->role == 1)
                 {
-                    dispatch((new ManageCampusJob($user)))->delay(5);
+                    dispatch_sync((new ManageCampusJob($user)));
+                    getCampusSession($user->id);
                 }
 
                 return response()->json($res);

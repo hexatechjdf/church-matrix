@@ -9,20 +9,23 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use App\Services\ChurchService;
 
 class ManageRecordsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $records;
+    public $user_id;
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($records)
+    public function __construct($records,$user_id)
     {
-         $this->records = $records;
+        $this->records = $records;
+        $this->user_id = $user_id;
     }
 
     /**
@@ -30,30 +33,13 @@ class ManageRecordsJob implements ShouldQueue
      *
      * @return void
      */
-    public function handle()
+   public function handle(ChurchService $churchService)
     {
         $data = $this->records;
-        $final = collect($data)->map(function ($record) {
-            list($year, $week) = $this->decodeWeekReference($record['week_reference']);
-            \Log::info($year);
-            return [
-                'record_unique_id'          => @$record['id'],
-                'organization_unique_id'    => @$record['organization_id'],
-                'week_reference'            => @$record['week_reference'],
-                'week_no'                   => @$week,
-                'week_volume'               => @$year . '_' . @$week,
-                'service_date_time'         => @$record['service_date_time'],
-                'service_timezone'          => @$record['service_timezone'],
-                'value'                     => @$record['value'],
-                'service_unique_time_id'    => @$record['service_time_id'],
-                'event_unique_id'           => @$record['event']['id'] ?? null,
-                'category_unique_id'        => @$record['category']['id'] ?? null,
-                'campus_unique_id'          => @$record['campus']['id'],
-                'record_created_at'         => @$record['created_at'],
-                'record_updated_at'         => @$record['updated_at'],
-                'created_at'                => now(),
-                'updated_at'                => now(),
-            ];
+        $user_id = $this->user_id; // <-- use job property
+
+        $final = collect($data)->map(function ($record) use ($churchService, $user_id) {
+            return $churchService->setRecordData($user_id, $record);
         })->toArray();
 
         $this->saveRecords($final);
@@ -75,13 +61,5 @@ class ManageRecordsJob implements ShouldQueue
         }
     }
 
-    public function decodeWeekReference($week_reference)
-    {
-        $baseYear = 1970;
-        $year = $baseYear + intdiv($week_reference, 52);
-        $week = $week_reference % 52;
-        if ($week === 0) $week = 52;
 
-        return [$year, $week];
-    }
 }

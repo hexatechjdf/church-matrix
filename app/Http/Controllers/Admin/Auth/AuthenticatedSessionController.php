@@ -20,7 +20,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function create()
     {
-        
+
         return view('admin.auth.login');
     }
 
@@ -41,8 +41,8 @@ class AuthenticatedSessionController extends Controller
         }
         $request->authenticate();
         $request->session()->regenerate();
-        
-        return redirect()->intended(RouteServiceProvider::HOME);
+
+        return redirect()->route('church-matrix.index');
     }
 
     /**

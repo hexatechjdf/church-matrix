@@ -17,6 +17,7 @@ use App\Http\Controllers\Location\Churchmatrix\ChurchEventController;
 use App\Http\Controllers\Location\Churchmatrix\RecordController;
 use App\Http\Controllers\Location\Churchmatrix\ServiceTimeController;
 use App\Http\Controllers\Location\Churchmatrix\SettingIntergration;
+use App\Http\Controllers\Location\Churchmatrix\StatsController;
 use App\Http\Controllers\ChartController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
@@ -184,6 +185,14 @@ Route::prefix('locations')->name('locations.')->group(function () {
         });
 
         Route::prefix('integration')->name('integration.')->group(function () {
+
+            Route::get('/get/events', [SettingIntergration::class, 'getEvents'])->name('events');
+            Route::get('/get/campuses', [SettingIntergration::class, 'getCampuses'])->name('campuses');
+            Route::get('/get/times', [SettingIntergration::class, 'getServiceTimes'])->name('times');
+
+            Route::get('/update/times', [SettingIntergration::class, 'updateTimes'])->name('update.times');
+            Route::get('/update/records', [SettingIntergration::class, 'updateRecords'])->name('update.records');
+
             Route::prefix('events')->name('events.')->group(function () {
                 Route::get('/', [ChurchEventController::class, 'index'])->name('index');
                 Route::get('/get/events', [ChurchEventController::class, 'getEvents'])->name('data');
@@ -204,6 +213,11 @@ Route::prefix('locations')->name('locations.')->group(function () {
                 Route::get('/get/form', [RecordController::class, 'getForm'])->name('form');
                 Route::get('/get/service-times', [RecordController::class, 'getTimesPaginated'])->name('service-times');
                 Route::post('/manage', [RecordController::class, 'manage'])->name('manage')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+                Route::post('destroy/{id}', [RecordController::class, 'destroy'])->name('destroy')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+            });
+
+            Route::prefix('stats')->name('stats.')->group(function () {
+                Route::get('/', [StatsController::class, 'index'])->name('index');
             });
         });
     });

@@ -20,16 +20,7 @@ class IndexController extends Controller
     public function index(Request $request)
     {
         $user = loginUser();
-
-        $timezones = [];
-        foreach (DateTimeZone::listIdentifiers(DateTimeZone::ALL) as $tz) {
-            $dt = new DateTime('now', new DateTimeZone($tz));
-            $offset = $dt->getOffset();
-            $hours = intdiv($offset, 3600);
-            $minutes = abs(($offset % 3600) / 60);
-            $sign = ($offset >= 0) ? '+' : '-';
-            $timezones[$tz] = sprintf('(GMT%s%02d:%02d) %s', $sign, abs($hours), $minutes, $tz);
-        }
+        $timezones = getTimeZones();
 
         $settings = getChurchToken('location');
 

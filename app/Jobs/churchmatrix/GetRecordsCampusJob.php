@@ -17,15 +17,17 @@ class GetRecordsCampusJob implements ShouldQueue
 
     public $cam_id;
     public $page;
+    public $user_id;
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($cam_id,$page = 1)
+    public function __construct($cam_id,$user_id,$page = 1)
     {
         $this->cam_id = $cam_id;
         $this->page = $page;
+        $this->user_id = $user_id;
     }
 
     /**
@@ -39,9 +41,10 @@ class GetRecordsCampusJob implements ShouldQueue
         $page = $this->page;
 
         try {
-            $nextPage = $this->processPage($campus_id, $page, $churchService);
+            $nextPage = $this->processPage($campus_id, $page, $churchService,$this->user_id);
+            \Log::info($nextPage);
             if ($nextPage) {
-                dispatch(new self($campus_id, $nextPage));
+                dispatch(new self($campus_id,$this->user_id, $nextPage));
             }
         } catch (\Exception $e) {
             \Log::error($e);
@@ -49,7 +52,7 @@ class GetRecordsCampusJob implements ShouldQueue
 
     }
 
-    public function processPage($campus_id, $page, $churchService,$url = 'records.json',$perpage = 100)
+    public function processPage($campus_id, $page, $churchService,$id,$url = 'records.json',$perpage = 100)
     {
         $params = [
             'campus_id' => $campus_id,
@@ -57,13 +60,15 @@ class GetRecordsCampusJob implements ShouldQueue
             'per_page'  => $perpage,
         ];
 
-        list($data, $linkHeader) = $churchService->request('GET', $url, $params, true);
+        $crm  = \getChurchToken(null,$id);
+
+        list($data, $linkHeader) = $churchService->request('GET', $url, $params, true,$crm);
 
         if (!$data) {
             return null;
         }
 
-        dispatch((new ManageRecordsJob($data)))->delay(5);
+        dispatch((new ManageRecordsJob($data,$id)))->delay(5);
         $l = @$linkHeader[0] ?? null;
 
         $pages = \parseLinks($l);

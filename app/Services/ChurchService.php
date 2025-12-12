@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use App\Models\CrmToken;
 use Illuminate\Support\Facades\Cache;
+use App\Jobs\churchmatrix\ServiceTimeJob;
 
 class ChurchService
 {
@@ -12,10 +13,7 @@ class ChurchService
     {
         $user = loginUser();
         $ty = $user->role == 0 ? 'admin' : 'location';
-        if ($ty == 'location') {
-            $user->church_admin = false;
-            $user->save();
-        }
+
         return CrmToken::updateOrCreate([
             'user_id' => $user->id,
             'crm_type' => 'church'
@@ -29,11 +27,10 @@ class ChurchService
 
     public function fetchEvents()
     {
-        $cacheKey = 'church_events';
+        $cacheKey = 'church_eventsss';
         return Cache::remember($cacheKey, 60 * 60, function () {
             $url = "events.json";
             list($data, $apiEvents) = $this->request('GET', $url, [], true);
-
             return $data;
         });
     }
@@ -92,10 +89,6 @@ class ChurchService
                     ];
                 })->toArray();
             });
-        } else {
-            $c = @$user->campus;
-            $campuses['id'] = @$c->campus_unique_id;
-            $campuses['name'] = @$c->name;
         }
 
         return $campuses;
@@ -103,12 +96,16 @@ class ChurchService
 
     public function fetchRegions($crm = null)
     {
-        return $this->request('GET', 'regions.json', [], false, $crm);
+        return Cache::remember('regions', 600, function () use ($t) {
+            return $this->request('GET', 'regions.json', [], false, $crm);
+        });
+
     }
 
     public function saveChurchSetting($id, $key)
     {
         $user = loginUser();
+
         $t = $user->churchToken;
         if (!$t) {
             return "Church token not found";
@@ -119,13 +116,12 @@ class ChurchService
     }
 
 
-    public function request($method, $url, $data = [], $header_required = false, $crm = null)
+    public function request($method, $url, $data = [], $header_required = false, $crm = null,$show_complete = false)
     {
         $baseurl = 'https://churchmetrics.com/api/v1/';
         $endpoint = $baseurl . $url;
 
         $crm = $crm ?? getChurchToken();
-
 
         $auth_key = $crm->refresh_token ?? '2b98fda4b8c22b26d7da69d816bf3ae7';
         $auth_user = $crm->access_token ?? 'radiwa6602@dwakm.com';
@@ -149,7 +145,10 @@ class ChurchService
                 throw new \Exception("Unsupported HTTP method: $method");
             }
 
-            // dd($response->json() );
+            if($show_complete)
+            {
+               return $response->json();
+            }
 
             $r =  $response->successful() ? $response->json() : false;
             return $header_required ? [$r, @$response->getHeader('Link')] : $r;
@@ -158,4 +157,67 @@ class ChurchService
             return false;
         }
     }
+
+    public function getUserCampusId($request,$user)
+    {
+        $campus_id = null;
+        try {
+            $campus_id = $user->church_admin
+                ? $request->campus_id
+                : @getCampusSession()['campus_id'];
+        } catch (\Exception $e) {}
+
+        return $campus_id;
+    }
+
+    public function getCacheTimes($user)
+    {
+        $cacheKey = "service_time_temp_{$user->id}";
+        $all = cache()->get($cacheKey);
+        if (empty($all)) {
+            dispatch_sync(new ServiceTimeJob($user->id, false));
+            $all = cache()->get($cacheKey);
+        }
+
+        return $all;
+    }
+
+    public function setRecordData($user_id,$record)
+    {
+        list($year, $week) = $this->decodeWeekReference($record['week_reference']);
+
+        return [
+            'user_id'          => $user_id,
+            'record_unique_id'          => @$record['id'],
+            'organization_unique_id'    => @$record['organization_id'],
+            'week_reference'            => @$record['week_reference'],
+            'week_no'                   => @$week,
+            'week_volume'               => @$year . '_' . @$week,
+            'service_date_time'         => @$record['service_date_time'],
+            'service_timezone'          => @$record['service_timezone'],
+            'value'                     => @$record['value'],
+            'service_unique_time_id'    => @$record['service_time_id'],
+            'event_unique_id'           => @$record['event']['id'] ?? null,
+            'event_name'           => @$record['event']['name'] ?? null,
+            'category_unique_id'        => @$record['category']['id'] ?? null,
+            'category_name'        => @$record['category']['name'] ?? null,
+            'campus_unique_id'          => @$record['campus']['id'],
+            'campus_name'          => @$record['campus']['slug'],
+            'record_created_at'         => @$record['created_at'],
+            'record_updated_at'         => @$record['updated_at'],
+            'created_at'                => now(),
+            'updated_at'                => now(),
+        ];
+    }
+
+    public function decodeWeekReference($week_reference)
+    {
+        $baseYear = 1970;
+        $year = $baseYear + intdiv($week_reference, 52);
+        $week = $week_reference % 52;
+        if ($week === 0) $week = 52;
+
+        return [$year, $week];
+    }
+
 }

@@ -10,7 +10,6 @@ use Illuminate\Http\Client\Request;
 use PhpParser\Node\Stmt\TryCatch;
 use App\Helpers\gCache;
 use Carbon\Carbon;
-
 use Illuminate\Support\Facades\Cache;
 
 
@@ -518,7 +517,7 @@ function getChurchToken($mytoken = null,$id=null)
         return $user->churchToken ?? null;
     }
 
-    $user = $user->church_admin ? $user : loginUser(1);
+    $user = $user->church_admin ? $user : loginUser(config('services.login.admin_id'));
 
     return $user->churchToken ?? null;
 }
@@ -527,7 +526,7 @@ function getUserTimeZone($id=null)
 {
     $user = loginUser($id);
 
-    $user = $user->timezone ? $user : loginUser(1);
+    $user = $user->timezone ? $user : loginUser(config('services.login.admin_id'));
 
     return $user->timezone ?? 'London';
 }
@@ -596,4 +595,48 @@ function customDateTime($d,$f = 'H:i:s' )
     }catch(\Exception $e){
     }
     return $d;
+}
+
+
+function getTimeZones()
+{
+    $timezones = [];
+    foreach (\DateTimeZone::listIdentifiers(\DateTimeZone::ALL) as $tz) {
+
+        $dt = new \DateTime('now', new \DateTimeZone($tz));
+        $offset = $dt->getOffset();
+        $hours = intdiv($offset, 3600);
+        $minutes = abs(($offset % 3600) / 60);
+        $sign = ($offset >= 0) ? '+' : '-';
+        $timezones[$tz] = sprintf('(GMT%s%02d:%02d) %s', $sign, abs($hours), $minutes, $tz);
+    }
+
+    return $timezones;
+}
+
+
+if (!function_exists('setSession')) {
+    function setSession($key, $value)
+    {
+        session([$key => $value]);
+        return $value;
+    }
+}
+
+function getCampusSession($id=null)
+{
+    if (!session()->has('campus_id') || !session()->has('campus_name')) {
+
+        $user = loginUser($id);
+        $campus = @$user->campus;
+
+        session([
+            'campus_id'   => @$campus->campus_unique_id,
+            'campus_name' => @$campus->name,
+        ]);
+    }
+    return [
+        'campus_id'   => session('campus_id'),
+        'campus_name' => session('campus_name'),
+    ];
 }

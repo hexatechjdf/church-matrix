@@ -9,23 +9,125 @@ use Illuminate\Support\Facades\Http;
 use App\Services\ChurchEventService;
 use App\Services\ServiceTimeService;
 use App\Services\ChurchService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use App\Jobs\churchmatrix\ServiceTimeJob;
+use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
+use App\Models\ServiceTime;
 
 class SettingIntergration extends Controller
 {
-    protected $eventService;
-    protected $serviceTimeService;
-    protected $service;
+    protected $churchService;
 
-    public function __construct(
-        ChurchEventService $eventService,
-        ChurchService $service,
-        ServiceTimeService $serviceTimeService
-    ) {
-        $this->eventService = $eventService;
-        $this->service = $service;
-        $this->serviceTimeService = $serviceTimeService;
+    public function __construct(ChurchService $churchService)
+    {
+        $this->churchService = $churchService;
     }
+
+   public function getEvents(Request $request)
+    {
+        $events = collect($this->churchService->fetchEvents()); // <-- convert to collection
+
+        $search = $request->get('search', '');
+        if ($search) {
+            $events = $events->filter(function($event) use ($search) {
+                return stripos($event['name'], $search) !== false; // array key access
+            });
+        }
+
+        $page = (int) $request->get('page', 1);
+        $perPage = 10;
+
+        $total = $events->count();
+        $eventsPage = $events->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $more = ($page * $perPage) < $total;
+
+        return response()->json([
+            'data' => $eventsPage,
+            'more' => $more
+        ]);
+    }
+
+    public function getCampuses(Request $request)
+    {
+        $events = collect($this->churchService->fetchCampuses());
+
+        $search = $request->get('search', '');
+        if ($search) {
+            $events = $events->filter(function($event) use ($search) {
+                return stripos($event['slug'], $search) !== false; // array key access
+            });
+        }
+
+        $page = (int) $request->get('page', 1);
+        $perPage = 10;
+
+        $total = $events->count();
+        $eventsPage = $events->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $more = ($page * $perPage) < $total;
+
+        return response()->json([
+            'data' => $eventsPage,
+            'more' => $more
+        ]);
+    }
+
+    public function getServiceTimes(Request $request)
+    {
+
+        $user = loginUser();
+
+        $campus_id = null;
+        try{
+            $campus_id = $user->church_admin ?  $request->campus_id : @getCampusSession()['campus_id'];
+        }catch(\Exception $e){
+        }
+
+        if(!$campus_id)
+        {
+            return response()->json([
+                "data" => [],
+            ]);
+        }
+
+        if (!$user->church_admin) {
+            $records = ServiceTime::when($campus_id, function ($q) use ($campus_id) {
+                $q->where('campus_id', $campus_id);
+            })->orderBy('id', 'DESC');
+
+            return DataTables::of($records)
+                ->make(true);
+        }
+
+
+        $cacheKey = "service_time_temp_{$user->id}";
+        $all = cache()->get($cacheKey);
+
+        if (empty($all)) {
+            dispatch_sync(new ServiceTimeJob($user->id, false)); // fill cache
+            $all = cache()->get($cacheKey);
+        }
+
+        if (empty($all)) {
+            return response()->json([
+                "data" => [],
+            ]);
+        }
+
+        $filtered = collect($all)->filter(function($item) use ($campus_id) {
+            return isset($item['campus_id']) && $item['campus_id'] == $campus_id;
+        })->values();
+
+        $unique = $filtered->unique('cm_id')->values();
+
+        return response()->json([
+            "data" => $unique,
+        ]);
+    }
+
 
     public function index()
     {

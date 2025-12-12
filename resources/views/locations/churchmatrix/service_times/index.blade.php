@@ -157,8 +157,8 @@
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
 
-                <button class="btn btn-lg btn-primary shadow-lg rounded-pill px-4" data-toggle="modal"
-                    data-target="#serviceTimeModal" onclick="openAddServiceTimeModal()">
+                <button class="btn btn-lg btn-primary shadow-lg rounded-pill px-4 get-times-form" data-toggle="modal"
+                    data-target="#serviceTimeModal">
                     <i class="fas fa-plus me-2"></i>Add New
                 </button>
             </div>
@@ -166,10 +166,13 @@
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden"
                 style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
 
-                <div class="card-header bg-gradient-primary text-white border-0 py-4">
+                <div class="card-header bg-gradient-primary text-white border-0 py-4 d-flex justify-content-between">
                     <h4 class="mb-0 fw-bold">
                         <i class="me-3"></i>All Service Times
                     </h4>
+                    <button type="button" class="refresh-btn btn btn-warning" data-url="{{ route('locations.churchmatrix.integration.update.times') }}" title="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                 </div>
 
                 <div class="card-body p-0">
@@ -178,12 +181,11 @@
                         <table class="table table-hover align-middle mb-0" id="serviceTimesTable">
                             <thead class="bg-light">
                                 <tr>
-                                    <th>#</th>
-                                    <th>Campus</th>
-                                    <th>Day</th>
+                                    @if ($user->church_admin)
+                                        <th>Campus</th>
+                                    @endif
                                     <th>Time</th>
                                     <th>Timezone</th>
-                                    <th>Relation</th>
                                     <th>Start Date</th>
                                     <th>End Date</th>
                                     <th class="text-center">Actions</th>
@@ -198,15 +200,36 @@
         </div>
     </div>
 
-    <div class="modal fade" id="serviceTimeModal" tabindex="-1">
+    <div class="modal fade" id="serviceTimeModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="serviceModalTitle">Service Time</h5>
+                    <button type="button" class="btn-close btn btn-danger btn-sm" data-dismiss="modal">x</button>
+                </div>
 
+                <form id="addServiceTimeForm"
+                    action="{{ route('locations.churchmatrix.integration.service-times.manage') }}" method="POST"
+                    class="form-submit" data-table="serviceTimesTable">
+                    @csrf
 
+                    <div class="modal-body" id="fetchselect2">
 
+                        <div id="serviceLoader" class="text-center py-4" style="display:none;">
+                            <div class="spinner-border"></div>
+                            <p class="mt-2">Loading...</p>
+                        </div>
+
+                        <div id="serviceTimeModalBody"></div>
+
+                    </div>
+
+                </form>
             </div>
         </div>
     </div>
+
+
 
 
 
@@ -214,38 +237,30 @@
 
 @push('script')
     @include('components.submit-form')
+    @include('locations.churchmatrix.components.script')
     <script>
         $(document).ready(function() {
 
+            let serverSideCall = `{{ !$user->church_admin }}`;
+
             $('#serviceTimesTable').DataTable({
                 processing: true,
-                serverSide: false, // client-side pagination since all data is local
+                serverSide: serverSideCall, // client-side pagination since all data is local
                 ajax: "{{ route('locations.churchmatrix.integration.service-times.data') }}",
                 pageLength: 10, // adjust as needed
-                columns: [{
-                        data: null,
-                        name: 'index',
-                        render: (data, type, row, meta) => meta.row + 1
-                    }, // # column
-                    {
-                        data: 'campus',
-                        name: 'campus'
-                    },
-                    {
-                        data: 'day',
-                        name: 'day'
-                    },
-                    {
-                        data: 'time',
-                        name: 'time'
+                columns: [
+                    @if ($user->church_admin)
+                        {
+                            data: 'campus_name',
+                            name: 'campus_name'
+                        },
+                    @endif {
+                        data: 'time_of_day',
+                        name: 'time_of_day'
                     },
                     {
                         data: 'timezone',
                         name: 'timezone'
-                    },
-                    {
-                        data: 'relation',
-                        name: 'relation'
                     },
                     {
                         data: 'date_start',
@@ -262,8 +277,8 @@
                         className: "text-center",
                         render: function(data) {
                             return `
-                                 <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2"
-                            onclick='editServiceTime(${JSON.stringify(data)})'>
+                                 <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2 get-times-form"
+                            data-obj='${JSON.stringify(data)}'>
                             <i class="fas fa-edit"></i>
                         </button>
 
@@ -281,196 +296,153 @@
                 ]
             });
 
-
-            let currentPage = 1;
-            const perPage = 2;
-
-            // function loadServiceTimes(page = 1) {
-
-            //     const campusId = $('#campus_id').val() || null;
+            // $(document).on("click", ".get-times-form", function() {
+            //     let id = $(this).data("id") || null;
 
             //     $.ajax({
-            //         url: "{{ route('locations.churchmatrix.integration.service-times.data') }}",
-            //         type: 'GET',
+            //         url: "{{ route('locations.churchmatrix.integration.records.form') }}",
+            //         type: "GET",
             //         data: {
-            //             campus_id: campusId,
-            //             page,
-            //             per_page: perPage
+            //             id
             //         },
-
+            //         beforeSend: function() {
+            //             $("#formContainer").html("<p class='text-center'>Loading...</p>");
+            //         },
             //         success: function(res) {
+            //             $("#formContainer").html(res.html);
 
-            //             $("#custom-pagination").remove();
-
-            //             let tbody = $('#serviceTimesTable tbody');
-            //             tbody.empty();
-
-            //             if (res.data.length === 0) {
-            //                 tbody.append(
-            //                     '<tr><td colspan="11" class="text-center py-5">No service times found</td></tr>'
-            //                 );
-            //                 return;
-            //             }
-
-            //             res.data.forEach((time, idx) => {
-            //                 tbody.append(`
-        //         <tr>
-        //             <td>${idx + 1}</td>
-        //             <td>${time.campus || 'N/A'}</td>
-        //             <td>${time.day || 'N/A'}</td>
-        //             <td>${time.time || 'N/A'}</td>
-        //             <td>${time.timezone || 'N/A'}</td>
-        //             <td>${time.relation || 'N/A'}</td>
-        //             <td>${time.date_start || 'N/A'}</td>
-        //             <td>${time.date_end || 'N/A'}</td>
-        //             <td>
-        //                 <button class="btn btn-sm btn-warning rounded-circle shadow-sm me-2"
-        //                     onclick='editServiceTime(${JSON.stringify(time)})'>
-        //                     <i class="fas fa-edit"></i>
-        //                 </button>
-
-        //                 <button class="btn btn-sm btn-danger rounded-circle shadow-sm action-btn"
-        //                     data-url="/locations/churchmatrix/integration/service-times/destroy/${time.id}"
-        //                     data-message="You want to delete '${time.event || 'Service Time'}'?"
-        //                     data-success="Service Time deleted!"
-        //                     data-function="loadServiceTimes">
-        //                     <i class="fas fa-trash"></i>
-        //                 </button>
-        //             </td>
-        //         </tr>
-        //     `);
+            //             loadTimes();
+            //             $('.service-time-select').select2({
+            //                 dropdownParent: $("#recordsModal"),
+            //                 width: '100%',
+            //                 placeholder: "Select Service Time",
+            //                 allowClear: true,
             //             });
 
-            //             let pagination = `
-        //     <div id="custom-pagination" class="d-flex justify-content-between mt-3">
-        //         <button id="prevBtn" class="btn btn-sm btn-primary"
-        //             ${!res.prev ? 'disabled' : ''}
-        //             onclick="goToPage(${page - 1})">Prev</button>
+            //             // Apply select2 on event type
+            //             $('.event-type-select').select2({
+            //                 dropdownParent: $("#recordsModal"),
+            //                 width: '100%',
+            //                 placeholder: "Select Event Type",
+            //                 allowClear: true
+            //             });
 
-        //         <span>Page ${page}</span>
-
-        //         <button id="nextBtn" class="btn btn-sm btn-primary"
-        //             ${!res.next ? 'disabled' : ''}
-        //             onclick="goToPage(${page + 1})">Next</button>
-        //     </div>
-        // `;
-
-            //             $('#serviceTimesTable').after(pagination);
-            //             currentPage = page;
+            //             $('#recordsModal').modal('show');
             //         }
             //     });
-            // }
-
-            // function goToPage(page) {
-            //     $("#prevBtn, #nextBtn").prop("disabled", true).text("Loading...");
-            //     loadServiceTimes(page);
-            // }
-
-            // window.loadServiceTimes = loadServiceTimes;
-            // window.goToPage = goToPage;
-
-            // $(document).ready(function() {
-            //     loadServiceTimes(currentPage);
             // });
+
+            $(document).on("click", ".get-times-form", function() {
+                let payload = $(this).data('obj') ?? '';
+                $("#serviceTimeModal").modal("show");
+                $.ajax({
+                    url: "{{ route('locations.churchmatrix.integration.service-times.form') }}",
+                    type: "GET",
+                    data: {
+                        payload
+                    },
+
+                    beforeSend: function() {
+                        $("#serviceLoader").show();
+                        $("#serviceTimeModalBody").html("");
+                    },
+
+                    success: function(res) {
+                        $("#serviceTimeModalBody").html(res);
+
+                        initSelect2("#fetchselect2", "events");
+                        if (!serverSideCall) {
+                            initSelect2("#fetchselect2", "campuses");
+
+                            if (payload.campus_id) {
+                                setSelect2Selected($('select[name="campus_id"]'), payload
+                                    .campus_id, payload.campus_name);
+                            }
+                        }
+                        if (payload.event_id) {
+                            setSelect2Selected($('select[name="event_id"]'), payload.event_id,
+                                payload.event_name);
+                        }
+                        toggleDateFields();
+                    },
+
+                    error: function(xhr) {
+                        $("#serviceTimeModalBody").html(
+                            "<p class='text-danger'>Error loading form. Please try again.</p>"
+                        );
+                    },
+
+                    complete: function() {
+                        $("#serviceLoader").hide();
+
+                    }
+                });
+            });
+
+
 
 
             // window.openAddServiceTimeModal = function() {
-            //     $('#service_time_id').val('');
-            //     $('#modal_mode').val('create');
-            //     let i = $('#campus_id').val();
-            //     $('.campus_id').val(i);
-            //     $('select[name="day_of_week"]').val('0');
-            //     $('input[name="time_of_day"]').val('');
-            //     $('input[name="date_start"]').val('');
-            //     $('input[name="date_end"]').val('');
-            //     $('select[name="event_id"]').val('');
+            //     let campusId = $('#campus_id').val();
 
-            //     $('#serviceModalTitle').text('Add Service Time');
-            //     $('#serviceModalBtnText').text('Add Service Time');
+            //     $.ajax({
+            //         url: "{{ route('locations.churchmatrix.integration.service-times.form') }}",
+            //         type: "GET",
+            //         data: {
+            //             mode: 'create',
+            //         },
+            //         success: function(html) {
+            //             $('#serviceTimeModal .modal-content').html(html);
 
-            //     $('#serviceTimeModal').modal('show');
-            // }
+            //             $('input[name="date_start"], input[name="date_end"]').closest('.mb-3')
+            //                 .hide();
+
+            //             $('#serviceTimeModal').modal('show');
+            //         }
+            //     });
+            // };
 
             // window.editServiceTime = function(data) {
-            //     console.log(data);
-            //     $('#modal_mode').val('edit');
-            //     $('#service_time_id').val(data.id);
-            //     let i = $('#campus_id').val();
-            //     $('.campus_id').val(i);
+            //     let campusId = $('#campus_id').val();
 
-            //     // Correct field names
-            //     $('select[name="day_of_week"]').val(String(data.day)); // day instead of day_of_week
+            //     $.ajax({
+            //         url: "{{ route('locations.churchmatrix.integration.service-times.form') }}",
+            //         type: "GET",
+            //         data: {
+            //             mode: 'edit',
+            //             id: data.id,
+            //             payload: data,
+            //         },
+            //         success: function(html) {
+            //             $('#serviceTimeModal .modal-content').html(html);
 
-            //     // Convert time to proper format for input[type="time"]
-            //     let timeValue = data.time && data.time !== 'N/A' ? new Date(data.time).toISOString().slice(11,
-            //         16) : '';
-            //     $('input[name="time_of_day"]').val(timeValue);
+            //             let eventId = $('select[name="event_id"]').val();
+            //             if (eventId) {
+            //                 $('input[name="date_start"], input[name="date_end"]').closest('.mb-3')
+            //                     .show();
+            //             } else {
+            //                 $('input[name="date_start"], input[name="date_end"]').closest('.mb-3')
+            //                     .hide();
+            //             }
 
-            //     $('input[name="date_start"]').val(data.date_start !== 'N/A' ? data.date_start : '');
-            //     $('input[name="date_end"]').val(data.date_end !== 'N/A' ? data.date_end : '');
-            //     $('select[name="event_id"]').val(data.event_id ?? '');
+            //             $('#serviceTimeModal').modal('show');
+            //         }
+            //     });
+            // };
 
-            //     $('#serviceModalTitle').text('Edit Service Time');
-            //     $('#serviceModalBtnText').text('Update Service Time');
+            function toggleDateFields() {
+                let val = $('select[name="event_id"]').val();
 
-            //     $('#serviceTimeModal').modal('show');
-            // }
-
-
-            window.openAddServiceTimeModal = function() {
-                let campusId = $('#campus_id').val();
-
-                $.ajax({
-                    url: "{{ route('locations.churchmatrix.integration.service-times.form') }}",
-                    type: "GET",
-                    data: {
-                        mode: 'create',
-                    },
-                    success: function(html) {
-                        $('#serviceTimeModal .modal-content').html(html);
-
-                        $('input[name="date_start"], input[name="date_end"]').closest('.mb-3')
-                        .hide();
-
-                        $('#serviceTimeModal').modal('show');
-                    }
-                });
-            };
-
-            window.editServiceTime = function(data) {
-                let campusId = $('#campus_id').val();
-
-                $.ajax({
-                    url: "{{ route('locations.churchmatrix.integration.service-times.form') }}",
-                    type: "GET",
-                    data: {
-                        mode: 'edit',
-                        id: data.id,
-                        payload:data,
-                    },
-                    success: function(html) {
-                        $('#serviceTimeModal .modal-content').html(html);
-
-                        let eventId = $('select[name="event_id"]').val();
-                        if (eventId) {
-                            $('input[name="date_start"], input[name="date_end"]').closest('.mb-3')
-                                .show();
-                        } else {
-                            $('input[name="date_start"], input[name="date_end"]').closest('.mb-3')
-                                .hide();
-                        }
-
-                        $('#serviceTimeModal').modal('show');
-                    }
-                });
-            };
-
-            $(document).on('change', 'select[name="event_id"]', function() {
-                if ($(this).val()) {
+                if (val) {
                     $('input[name="date_start"], input[name="date_end"]').closest('.mb-3').show();
                 } else {
                     $('input[name="date_start"], input[name="date_end"]').closest('.mb-3').hide();
                 }
+            }
+
+            // Run toggle when select2 changes
+            $(document).on('change', 'select[name="event_id"]', function() {
+                toggleDateFields();
             });
 
         });

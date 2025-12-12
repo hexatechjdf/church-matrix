@@ -20,7 +20,7 @@
         </div>
         <div class="module-content">
             <h3 class="module-title">Service Time</h3>
-            <p class="module-desc">Schedule and organize service timings for your congregation</p>
+            <p class="module-desc">Create, manage, and track all church service times and activities</p>
         </div>
         <i class="fas fa-chevron-right module-arrow"></i>
     </div>
@@ -30,8 +30,8 @@
             <i class="fas fa-database module-icon"></i>
         </div>
         <div class="module-content">
-            <h3 class="module-title">Records</h3>
-            <p class="module-desc">View, manage, and organize all church records securely</p>
+            <h3 class="module-title">Attendance</h3>
+            <p class="module-desc">View, manage, and organize all church attendance records securely</p>
         </div>
         <i class="fas fa-chevron-right module-arrow"></i>
     </div>
