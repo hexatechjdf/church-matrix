@@ -41,8 +41,6 @@ class ChartController extends Controller
 
     public function getChartJSData(Request $request)
     {
-
-
         $data = DB::table('events_data');
         $type = 'day';
         $column = 'month_year';
@@ -396,7 +394,7 @@ class ChartController extends Controller
     public function getApexChartData(Request $request)
     {
         $year = $request->input('year', date('Y'));
-        $months = $request->input('months'); 
+        $months = $request->input('months');
 
         $query = DB::table('events_data')
             ->whereNotNull('service_name')

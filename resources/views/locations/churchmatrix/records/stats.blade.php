@@ -3,6 +3,7 @@
 @section('title', 'Settings')
 
 @push('css')
+
     <style>
         .glass {
             background: rgba(255, 255, 255, 0.6);
@@ -35,8 +36,7 @@
             </div>
         </div>
 
-        <div class="row g-4 mb-4">
-
+        {{-- <div class="row g-4 mb-4">
             <!-- Total Events -->
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="glass p-4">
@@ -67,7 +67,7 @@
                 </div>
             </div>
 
-        </div>
+        </div> --}}
 
 
 
