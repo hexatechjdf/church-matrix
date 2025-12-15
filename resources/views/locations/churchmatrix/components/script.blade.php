@@ -134,5 +134,37 @@
                 }
             });
         }
+
+        if (type === 'all' || type === 'category') {
+            $container.find('.category-select').select2({
+                dropdownParent: $modal,
+                width: '100%',
+                placeholder: "Select Campus",
+                allowClear: true,
+                ajax: {
+                    url: "{{ route('locations.churchmatrix.integration.categories') }}",
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            search: params.term || "",
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function(res, params) {
+                        params.page = params.page || 1;
+                        return {
+                            results: $.map(res.data, item => ({
+                                id: item.id,
+                                text: item.name
+                            })),
+                            pagination: {
+                                more: res.more ?? false
+                            }
+                        };
+                    }
+                }
+            });
+        }
     }
 </script>

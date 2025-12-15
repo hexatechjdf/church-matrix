@@ -179,11 +179,11 @@
           series: series,
           stroke: { curve: 'smooth', width: 4 },
           markers: { size: 6, hover: { size: 10 } },
-          xaxis: { 
+          xaxis: {
             categories: res.categories,
             title: { text: 'Month' }
           },
-          yaxis: { 
+          yaxis: {
             title: { text: 'Headcount' },
             labels: { formatter: val => Math.round(val) }
           },

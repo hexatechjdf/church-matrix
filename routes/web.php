@@ -192,6 +192,7 @@ Route::prefix('locations')->name('locations.')->group(function () {
             Route::get('/get/events', [SettingIntergration::class, 'getEvents'])->name('events');
             Route::get('/get/campuses', [SettingIntergration::class, 'getCampuses'])->name('campuses');
             Route::get('/get/times', [SettingIntergration::class, 'getServiceTimes'])->name('times');
+            Route::get('/get/categories', [SettingIntergration::class, 'getCategories'])->name('categories');
 
             Route::get('/update/times', [SettingIntergration::class, 'updateTimes'])->name('update.times');
             Route::get('/update/records', [SettingIntergration::class, 'updateRecords'])->name('update.records');
@@ -221,6 +222,8 @@ Route::prefix('locations')->name('locations.')->group(function () {
 
             Route::prefix('stats')->name('stats.')->group(function () {
                 Route::get('/', [StatsController::class, 'index'])->name('index');
+                Route::get('/by/month/', [StatsController::class, 'timesChartData'])->name('month');
+                Route::get('/by/week/', [StatsController::class, 'getWeekStats'])->name('week');
             });
         });
     });
@@ -280,6 +283,10 @@ Route::get('/tokens_renew', function () {
 //     }
 //     return "Sync completed!";
 // });
+
+Route::get('/get-charts', function () {
+      return view('charts');
+});
 
 use App\Services\PlanningService;
 use App\Models\CrmToken;

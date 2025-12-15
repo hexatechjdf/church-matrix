@@ -640,3 +640,21 @@ function getCampusSession($id=null)
         'campus_name' => session('campus_name'),
     ];
 }
+
+if (!function_exists('getMonths')) {
+    function getMonths()
+    {
+        return [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+    }
+}
+
+if (!function_exists('getYears')) {
+    function getYears($start = 1970)
+    {
+        $currentYear = date('Y');
+        return range($start, $currentYear);
+    }
+}

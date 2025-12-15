@@ -75,6 +75,33 @@ class SettingIntergration extends Controller
         ]);
     }
 
+    public function getCategories(Request $request)
+    {
+        $events = collect($this->churchService->fetchCategories());
+
+        dd($events);
+
+        $search = $request->get('search', '');
+        if ($search) {
+            $events = $events->filter(function($event) use ($search) {
+                return stripos($event['slug'], $search) !== false; // array key access
+            });
+        }
+
+        $page = (int) $request->get('page', 1);
+        $perPage = 10;
+
+        $total = $events->count();
+        $eventsPage = $events->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $more = ($page * $perPage) < $total;
+
+        return response()->json([
+            'data' => $eventsPage,
+            'more' => $more
+        ]);
+    }
+
     public function getServiceTimes(Request $request)
     {
 

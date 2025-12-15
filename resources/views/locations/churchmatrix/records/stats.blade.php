@@ -1,9 +1,607 @@
-@extends('layouts.location')
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>@yield('title', 'Apex Charts Dashboard')</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="{{ asset('plugins/select2/select2.min.css') }}" rel="stylesheet" type="text/css" />
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+        }
+
+        .chart-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .05);
+        }
+    </style>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #8b5cf6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        .navbar {
+            background: var(--bg-secondary) !important;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .navbar-brand {
+            color: var(--text-primary) !important;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .navbar-brand i {
+            color: var(--primary-color);
+        }
+
+        .chart-card {
+            /* background: var(--bg-card); */
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            /* border: 1px solid var(--border-color); */
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            /* color: var(--text-primary); */
+            color: black;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-title i {
+            color: var(--primary-color);
+        }
+
+        .filter-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
+        }
+
+        .filter-btn:active {
+            transform: translateY(0);
+        }
+
+        .offcanvas {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-left: 1px solid var(--border-color);
+        }
+
+        .offcanvas-header {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .offcanvas-title {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .btn-close {
+            filter: invert(1);
+        }
+
+        .form-label {
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control,
+        .form-select {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.65rem;
+            border-radius: 8px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: var(--bg-primary);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+        }
+
+        .form-select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .btn-apply-filter {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            width: 100%;
+            margin-top: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-apply-filter:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-reset-filter {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            width: 100%;
+            margin-top: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-reset-filter:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.primary {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+        }
+
+        .stat-icon.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .stat-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+
+        .stat-icon.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+
+        .stat-info h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .stat-info p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .apexcharts-tooltip {
+            background: var(--bg-secondary) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .apexcharts-tooltip-title {
+            background: var(--bg-primary) !important;
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+    </style>
+
+    @stack('styles')
+</head>
+
+<body>
+{{--
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand">
+                <i class="fa-solid fa-chart-line"></i>
+                Attendance Record Statistics
+            </span>
+        </div>
+    </nav> --}}
+
+    <div class="container-fluid px-4 py-4">
+        <div class="row">
+            <div class="col-md-12">
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fa-solid fa-chart-area"></i>
+                            Attendance Over Time
+                        </h3>
+                        <button class="filter-btn" data-target="#time_chart" data-type="time_chart"
+                            data-function="loadLiveData">
+                            <i class="fa-solid fa-filter"></i>
+                            Filter
+                        </button>
+                    </div>
+                    <div id="time_chart"></div>
+                </div>
+            </div>
+            <div class="col-md-8">
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fa-solid fa-chart-line"></i>
+                            Category-wise Attendance Trends
+                        </h3>
+                        <button class="filter-btn" data-bs-toggle="offcanvas" data-bs-target="#categoryTimeChartFilter">
+                            <i class="fa-solid fa-filter"></i>
+                            Filter
+                        </button>
+                    </div>
+                    <div id="category_time_chart"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+
+                <!-- Pie Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            Attendance Distribution
+                        </h3>
+                        <button class="filter-btn" data-bs-toggle="offcanvas" data-bs-target="#pieChartFilter">
+                            <i class="fa-solid fa-filter"></i>
+                            Filter
+                        </button>
+                    </div>
+                    <div id="pie_chart"></div>
+                </div>
+            </div>
+            <div class="col-md-12">
+
+                <!-- Bar Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fa-solid fa-chart-column"></i>
+                           Category based Comparison
+                        </h3>
+                        <button class="filter-btn" data-bs-toggle="offcanvas" data-bs-target="#barChartFilter">
+                            <i class="fa-solid fa-filter"></i>
+                            Filter
+                        </button>
+                    </div>
+                    <div id="bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="chartFilterCanvas" aria-labelledby="offcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 id="offcanvasLabel">Filter Options</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            @include('locations.churchmatrix.records.components.chartsFilter')
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset('plugins/select2/select2.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    @include('locations.churchmatrix.components.script')
+    <script>
+        function loadLiveData(colx, coly, target) {
+            const year = $('#yearSelect').val() || new Date().getFullYear();
+            const months = $('#monthSelect').val();
+            let chart = null;
+
+
+            let urll = '{{ route('locations.churchmatrix.integration.stats.month') }}'
+
+            $.get(urll, {
+                    year,
+                    months,
+                    colx,
+                    coly,
+                })
+                .done(function(res) {
+
+                    const series = res.series;
+
+                    const options = {
+                        chart: {
+                            type: 'line',
+                            height: 520,
+                            toolbar: {
+                                show: true
+                            }
+                        },
+                        series,
+                        stroke: {
+                            curve: 'smooth',
+                            width: 4
+                        },
+                        markers: {
+                            size: 6
+                        },
+                        xaxis: {
+                            categories: res.categories,
+                            title: {
+                                text: 'Month'
+                            }
+                        },
+                        yaxis: {
+                            title: {
+                                text: 'Attendance Count'
+                            }
+                        },
+                        legend: {
+                            position: 'top'
+                        },
+                        title: {
+                            text: ``,
+                            align: 'center'
+                        }
+                    };
+
+                    if (chart) {
+                        chart.updateOptions({
+                            series,
+                            xaxis: {
+                                categories: res.categories
+                            },
+                            title: options.title
+                        });
+                    } else {
+                        chart = new ApexCharts(document.querySelector(target), options);
+                        chart.render();
+                    }
+                });
+        }
+
+        function loadLivePieData(colx, coly, target) {
+            const year = $('#yearSelect').val() || new Date().getFullYear();
+            const months = $('#monthSelect').val();
+
+            let urll = '{{ route('locations.churchmatrix.integration.stats.month') }}';
+
+            $.get(urll, {
+                    year,
+                    months,
+                    colx,
+                    coly,
+                    chart: 'pie'
+                })
+                .done(function(res) {
+
+                    const options = {
+                        chart: {
+                            type: 'pie',
+                            height: 420
+                        },
+                        series: res.series, // numbers only
+                        labels: res.labels, // category / service names
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            text: ``,
+                            align: 'center'
+                        },
+                        responsive: [{
+                            breakpoint: 480,
+                            options: {
+                                chart: {
+                                    width: 300
+                                },
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }]
+                    };
+
+                    const chart = new ApexCharts(document.querySelector(target), options);
+                    chart.render();
+                });
+        }
+
+        function loadGroupedBarChart(colx, coly, target) {
+            const year = $('#yearSelect').val() || new Date().getFullYear();
+            const months = $('#monthSelect').val();
+            const from = $('#fromDate').val();
+            const to = $('#toDate').val();
+
+            let urll = '{{ route('locations.churchmatrix.integration.stats.week') }}';
+
+            $.get(urll, {
+                    year,
+                    months,
+                    from_date: from,
+                    to_date: to,
+                    colx,
+                    coly
+                })
+                .done(function(res) {
+
+                    const options = {
+                        chart: {
+                            type: 'bar',
+                            height: 520,
+                            stacked: false
+                        },
+                        series: res.series,
+                        plotOptions: {
+                            bar: {
+                                horizontal: false,
+                                columnWidth: '60%'
+                            }
+                        },
+                        xaxis: {
+                            categories: res.categories,
+                            title: {
+                                text: 'Weeks'
+                            }
+                        },
+                        yaxis: {
+                            title: {
+                                text: 'Total Value'
+                            }
+                        },
+                        legend: {
+                            position: 'top'
+                        },
+                        title: {
+                            text: 'Weekly Grouped Report',
+                            align: 'center'
+                        },
+                        tooltip: {
+                            shared: true,
+                            intersect: false
+                        }
+                    };
+
+                    const chart = new ApexCharts(document.querySelector(target), options);
+                    chart.render();
+                });
+        }
+
+        $(document).ready(function() {
+            $(".select2").select2({
+                width: '100%',
+                minimumResultsForSearch: 0 // Always show the search box
+            });
+            let serverSideCall = `{{ !$user->church_admin }}`;
+            initSelect2("#fetchselect2", "category");
+            if (!serverSideCall) {
+                initSelect2("#fetchselect2", "campuses");
+            }
+        })
+
+
+        // $('#yearSelect, #monthSelect').on('change', loadLiveData);
+
+
+        loadLiveData('month', 'service_time', '#time_chart');
+        loadLiveData('month', 'category_name', '#category_time_chart');
+        loadLivePieData('month', 'category_name', '#pie_chart');
+        loadGroupedBarChart('month', 'category_name', '#bar');
+
+
+
+        $(document).on('click', '.filter-btn', function() {
+            var offcanvasEl = document.querySelector('#chartFilterCanvas');
+            var offcanvas = new bootstrap.Offcanvas(offcanvasEl);
+            offcanvas.show();
+        });
+    </script>
+    @stack('scripts')
+</body>
+
+</html>
+
+{{-- @extends('layouts.location')
 
 @section('title', 'Settings')
 
 @push('css')
-
     <style>
         .glass {
             background: rgba(255, 255, 255, 0.6);
@@ -36,7 +634,7 @@
             </div>
         </div>
 
-        {{-- <div class="row g-4 mb-4">
+        <div class="row g-4 mb-4">
             <!-- Total Events -->
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="glass p-4">
@@ -67,7 +665,7 @@
                 </div>
             </div>
 
-        </div> --}}
+        </div>
 
 
 
@@ -80,6 +678,9 @@
                         <i class="me-3"></i>All Attendances
                     </h4>
                 </div>
+                <div class="card-body">
+                    <div id="chart"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -88,5 +689,83 @@
 @endsection
 
 @push('script')
-    <script></script>
-@endpush
+    <script>
+        let chart = null;
+
+        function loadLiveData() {
+            const year = $('#yearSelect').val() || new Date().getFullYear();
+            const months = $('#monthSelect').val();
+
+            let urll = '{{ route('locations.churchmatrix.integration.stats.month') }}'
+
+            $.get(urll, {
+                    year,
+                    months
+                })
+                .done(function(res) {
+
+                    const $yearSelect = $('#yearSelect').empty();
+                    res.available_years.forEach(y => {
+                        $yearSelect.append(`<option value="${y}" ${y == year ? 'selected' : ''}>${y}</option>`);
+                    });
+
+                    const series = res.series.map(item => ({
+                        name: item.name,
+                        data: item.data
+                    }));
+
+                    const options = {
+                        chart: {
+                            type: 'line',
+                            height: 520,
+                            toolbar: {
+                                show: true
+                            }
+                        },
+                        series,
+                        stroke: {
+                            curve: 'smooth',
+                            width: 4
+                        },
+                        markers: {
+                            size: 6
+                        },
+                        xaxis: {
+                            categories: res.categories,
+                            title: {
+                                text: 'Month'
+                            }
+                        },
+                        yaxis: {
+                            title: {
+                                text: 'Attendance Count'
+                            }
+                        },
+                        legend: {
+                            position: 'top'
+                        },
+                        title: {
+                            text: `${year} Attendance by Service Time`,
+                            align: 'center'
+                        }
+                    };
+
+                    if (chart) {
+                        chart.updateOptions({
+                            series,
+                            xaxis: {
+                                categories: res.categories
+                            },
+                            title: options.title
+                        });
+                    } else {
+                        chart = new ApexCharts(document.querySelector("#chart"), options);
+                        chart.render();
+                    }
+                });
+        }
+
+        // $('#yearSelect, #monthSelect').on('change', loadLiveData);
+        loadLiveData();
+    </script>
+@endpush --}}
