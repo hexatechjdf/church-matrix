@@ -140,6 +140,7 @@ class SyncEventsData extends Command
             }
 
             $includedMap = $this->buildIncludedMap($response->included ?? []);
+            // dd($includedMap);
             $events = $this->processEventBatch($response->data, $userId, $locationId, $includedMap, $type);
 
             $batch = array_merge($batch, $events);

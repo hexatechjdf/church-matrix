@@ -24,7 +24,22 @@ class ChartController extends Controller
         return view('charts', compact('campuses', 'events'));
     }
 
-     public function getChartJSData(Request $request)
+
+    public function eventFilter()
+    {
+        $events = DB::table('events_data')
+            ->select('event_id', 'event_name', 'service_name')
+            ->distinct()
+            ->orderBy('service_date', 'asc')
+            ->get();
+
+        return view('event_filter', compact('events'));
+    }
+
+
+
+
+    public function getChartJSData(Request $request)
     {
 
 
@@ -54,7 +69,7 @@ class ChartController extends Controller
                 ->groupBy('week_reference', 'attendance_id')
                 ->orderBy('week_reference');
         } else if ($type == 'year') {
-            
+
             $data =  $data->select(
                 DB::raw("DATE_FORMAT(headcount_created_at, '%Y') as month_year"),
                 'attendance_id',
@@ -65,7 +80,7 @@ class ChartController extends Controller
                 ->groupBy('month_year', 'attendance_id')
                 ->orderBy('month_year');
         } else if ($type == 'day') {
-           
+
             $data =  $data->select(
                 DB::raw("DATE_FORMAT(headcount_created_at, '%d-%m-%Y') as month_year"),
                 'attendance_id',
@@ -195,7 +210,7 @@ class ChartController extends Controller
 
 
     // billobard chart
-    
+
     public function getChartData(Request $request)
     {
 
@@ -226,7 +241,7 @@ class ChartController extends Controller
                 ->groupBy('week_reference', 'attendance_id')
                 ->orderBy('week_reference');
         } else if ($type == 'year') {
-            
+
             $data =  $data->select(
                 DB::raw("DATE_FORMAT(headcount_created_at, '%Y') as month_year"),
                 'attendance_id',
@@ -237,7 +252,7 @@ class ChartController extends Controller
                 ->groupBy('month_year', 'attendance_id')
                 ->orderBy('month_year');
         } else if ($type == 'day') {
-           
+
             $data =  $data->select(
                 DB::raw("DATE_FORMAT(headcount_created_at, '%d-%m-%Y') as month_year"),
                 'attendance_id',
@@ -249,12 +264,12 @@ class ChartController extends Controller
                 ->orderBy('month_year');
         }
 
-        $data  = $data->whereNotNull('attendance_id')->having('attendance_count','>',0)->orderByDesc('first_created_date')
+        $data  = $data->whereNotNull('attendance_id')->having('attendance_count', '>', 0)->orderByDesc('first_created_date')
             ->get()->map(function ($item) {
                 $key = $item->attendance_id;
                 $item->{$key} = $item->attendance_count;
-    return $item;
-});;
+                return $item;
+            });;
 
 
 
@@ -262,11 +277,11 @@ class ChartController extends Controller
         // Prepare data for Chart.js
         $chartLabels = $data->pluck($column)->unique()->filter()->slice(-8)->values();
         $attendanceIds = $data->pluck('attendance_id')->unique()->filter()->values()->map(function ($item) {
-    return $item;
-});;
+            return $item;
+        });;
 
-        
-      
+
+
         // dd($chartLabels,$attendanceIds);
         // $datasets = [];
         // foreach ($attendanceIds as $id) {
@@ -290,7 +305,7 @@ class ChartController extends Controller
         // }
 
         return response()->json([
-            'keys' =>["name"=>"month_year","values"=>$attendanceIds],
+            'keys' => ["name" => "month_year", "values" => $attendanceIds],
             'json' => $data
         ]);
 
@@ -373,6 +388,91 @@ class ChartController extends Controller
         return response()->json([
             'labels' => $labels,
             'datasets' => $datasets
+        ]);
+    }
+
+    // ChartController.php
+
+    public function getApexChartData(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        $months = $request->input('months'); 
+
+        $query = DB::table('events_data')
+            ->whereNotNull('service_name')
+            ->whereNotNull('value')
+            ->whereYear('service_date', $year);
+
+        if ($months && is_array($months)) {
+            $query->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
+        }
+
+        $data = $query->select(
+            'service_name as event',
+            DB::raw('MONTH(service_date) as month'),
+            DB::raw('SUM(value) as total')
+        )
+            ->groupBy('event', 'month')
+            ->orderBy('month')
+            ->get();
+
+        $monthNames = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December"
+        ];
+
+        $events = $data->pluck('event')->unique()->sort()->values();
+
+        $series = [];
+
+        foreach ($events as $event) {
+            $monthlyData = array_fill(0, 12, 0); // Jan to Dec
+
+            foreach ($data->where('event', $event) as $row) {
+                $monthlyData[$row->month - 1] = (int)$row->total;
+            }
+
+            // Apply month filter if any
+            if ($months && is_array($months)) {
+                $filtered = [];
+                foreach ($months as $m) {
+                    $filtered[] = $monthlyData[intval($m) - 1] ?? 0;
+                }
+                $monthlyData = $filtered;
+            }
+
+            $series[] = [
+                'name' => $event,
+                'data' => $monthlyData
+            ];
+        }
+
+        // Categories (X-axis)
+        $categories = ($months && is_array($months))
+            ? collect($months)->map(fn($m) => $monthNames[intval($m) - 1])->values()->toArray()
+            : $monthNames;
+
+        return response()->json([
+            'series' => $series,
+            'categories' => $categories,
+            'year' => (int)$year,
+            'available_years' => DB::table('events_data')
+                ->whereNotNull('service_date')
+                ->selectRaw('YEAR(service_date) as year')
+                ->distinct()
+                ->orderByDesc('year')
+                ->pluck('year')
+                ->toArray()
         ]);
     }
 }
