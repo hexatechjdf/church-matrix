@@ -658,3 +658,23 @@ if (!function_exists('getYears')) {
         return range($start, $currentYear);
     }
 }
+
+ function parseDateRange($daterange = null)
+    {
+        // Default: current year
+        $from = date('Y-01-01');
+        $to   = date('Y-12-31');
+
+        if (!empty($daterange) && str_contains($daterange, ' - ')) {
+
+            [$start, $end] = explode(' - ', $daterange);
+
+            $from = date('Y-m-d', strtotime(trim($start)));
+            $to   = date('Y-m-d', strtotime(trim($end)));
+        }
+
+        return [
+            'from' => $from,
+            'to'   => $to,
+        ];
+    }

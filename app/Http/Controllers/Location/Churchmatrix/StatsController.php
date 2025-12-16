@@ -6,9 +6,17 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Services\ChurchService;
 
 class StatsController extends Controller
 {
+    protected $churchService;
+
+    public function __construct(ChurchService $churchService)
+    {
+        $this->churchService = $churchService;
+    }
+
     public function index()
     {
         $user = loginUser();
@@ -17,8 +25,12 @@ class StatsController extends Controller
 
     public function timesChartData(Request $request)
     {
+        // dd($request->all());
+        $user = loginUser();
         $year   = $request->year ?? now()->year;
         $months = $request->months;
+        $category_id = $request->category_id ?? null;
+        $campus_id = $this->churchService->getUserCampusId($request,$user);
 
         $column_y = $request->coly ?? 'service_time';
         $column_x = $request->colx ?? 'month';
@@ -53,6 +65,12 @@ class StatsController extends Controller
                     DB::raw("MONTH(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
                     $months
                 );
+            })
+            ->when($campus_id, function ($q) use ($campus_id) {
+                $q->where('campus_unique_id',$campus_id);
+            })
+            ->when($category_id, function ($q) use ($category_id) {
+                $q->where('category_unique_id',$category_id);
             })
             ->groupBy($groupY, 'month')
             ->orderBy('month')
@@ -116,9 +134,16 @@ class StatsController extends Controller
 
     public function getWeekStats(Request $request)
     {
-        $from = $request->from_date ?? date('Y-01-01');
-        $to   = $request->to_date ?? date('Y-12-31');
+        $user = loginUser();
+        $range = parseDateRange($request->daterange);
+
+        $from = $range['from'];
+        $to   = $range['to'];
+
+
+
         $column_y = $request->coly ?? 'category_name';
+        $campus_id = $this->churchService->getUserCampusId($request,$user);
 
         // Step 1: Get all weeks with correct start and end dates
     $weeks = DB::table('church_records')
@@ -135,9 +160,15 @@ class StatsController extends Controller
             DB::raw("DATE(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
             [$from, $to]
         )
+        ->when($campus_id, function ($q) use ($campus_id) {
+                $q->where('campus_unique_id',$campus_id);
+        })
         ->groupBy(DB::raw('YEARWEEK(STR_TO_DATE(service_date_time, "%Y-%m-%dT%H:%i:%s.%fZ"), 1)'))
         ->orderBy('week_no')
         ->get();
+
+        // dd($weeks,$from,$to);
+
 
         // Step 2: Get totals per category per week
         $records = DB::table('church_records')
@@ -152,6 +183,9 @@ class StatsController extends Controller
             )
             ->groupBy('category_name', DB::raw('YEARWEEK(STR_TO_DATE(service_date_time, "%Y-%m-%dT%H:%i:%s.%fZ"), 1)'))
             ->get();
+
+        // dd($records,$from,$to);
+
 
         // Step 3: Format week labels like '01 Jan - 07 Jan'
         $categories = $weeks->map(function($w) {
@@ -170,6 +204,8 @@ class StatsController extends Controller
                 'data' => $data
             ];
         }
+
+        // dd($series,$categories);
 
         // Step 5: Return JSON
         return response()->json([

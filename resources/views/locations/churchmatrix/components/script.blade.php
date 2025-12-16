@@ -104,42 +104,45 @@
         }
 
         if (type === 'all' || type === 'campuses') {
-            $container.find('.campus-select').select2({
-                dropdownParent: $modal,
-                width: '100%',
-                placeholder: "Select Campus",
-                allowClear: true,
-                ajax: {
-                    url: "{{ route('locations.churchmatrix.integration.campuses') }}",
-                    dataType: 'json',
-                    delay: 250,
-                    data: function(params) {
-                        return {
-                            search: params.term || "",
-                            page: params.page || 1
-                        };
-                    },
-                    processResults: function(res, params) {
-                        params.page = params.page || 1;
-                        return {
-                            results: $.map(res.data, item => ({
-                                id: item.id,
-                                text: item.name
-                            })),
-                            pagination: {
-                                more: res.more ?? false
-                            }
-                        };
+            let $campus = $container.find('.campus-select');
+            if ($campus.length) {
+                $campus.select2({
+                    dropdownParent: $modal,
+                    width: '100%',
+                    placeholder: "Select Campus",
+                    allowClear: true,
+                    ajax: {
+                        url: "{{ route('locations.churchmatrix.integration.campuses') }}",
+                        dataType: 'json',
+                        delay: 250,
+                        data: function(params) {
+                            return {
+                                search: params.term || "",
+                                page: params.page || 1
+                            };
+                        },
+                        processResults: function(res, params) {
+                            params.page = params.page || 1;
+                            return {
+                                results: $.map(res.data, item => ({
+                                    id: item.id,
+                                    text: item.name
+                                })),
+                                pagination: {
+                                    more: res.more ?? false
+                                }
+                            };
+                        }
                     }
-                }
-            });
+                });
+            }
         }
 
         if (type === 'all' || type === 'category') {
             $container.find('.category-select').select2({
                 dropdownParent: $modal,
                 width: '100%',
-                placeholder: "Select Campus",
+                placeholder: "Select Category",
                 allowClear: true,
                 ajax: {
                     url: "{{ route('locations.churchmatrix.integration.categories') }}",
@@ -153,13 +156,11 @@
                     },
                     processResults: function(res, params) {
                         params.page = params.page || 1;
+
                         return {
-                            results: $.map(res.data, item => ({
-                                id: item.id,
-                                text: item.name
-                            })),
+                            results: res.data, // already {id,text}
                             pagination: {
-                                more: res.more ?? false
+                                more: res.more
                             }
                         };
                     }

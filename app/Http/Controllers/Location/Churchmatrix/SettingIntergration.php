@@ -79,26 +79,38 @@ class SettingIntergration extends Controller
     {
         $events = collect($this->churchService->fetchCategories());
 
-        dd($events);
+        $search = strtolower($request->get('search', ''));
+        $page   = (int) $request->get('page', 1);
+        $perPage = 10;
 
-        $search = $request->get('search', '');
+        // 🔹 Only parents (already parents, but safe)
+        $parents = $events->map(function ($item) {
+            return $item['parent'];
+        });
+
+        // 🔹 Search on parent name
         if ($search) {
-            $events = $events->filter(function($event) use ($search) {
-                return stripos($event['slug'], $search) !== false; // array key access
+            $parents = $parents->filter(function ($parent) use ($search) {
+                return str_contains(strtolower($parent['name']), $search);
             });
         }
 
-        $page = (int) $request->get('page', 1);
-        $perPage = 10;
+        $total = $parents->count();
 
-        $total = $events->count();
-        $eventsPage = $events->slice(($page - 1) * $perPage, $perPage)->values();
+        $data = $parents
+            ->slice(($page - 1) * $perPage, $perPage)
+            ->values()
+            ->map(function ($parent) {
+                return [
+                    'id'   => $parent['id'],
+                    'text' => $parent['name'], // 👈 Select2 expects "text"
+                ];
+            });
 
-        $more = ($page * $perPage) < $total;
 
         return response()->json([
-            'data' => $eventsPage,
-            'more' => $more
+            'data' => $data,
+            'more' => ($page * $perPage) < $total
         ]);
     }
 
