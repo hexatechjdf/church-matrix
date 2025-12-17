@@ -20,6 +20,8 @@ use App\Http\Controllers\Location\Churchmatrix\SettingIntergration;
 use App\Http\Controllers\Location\Churchmatrix\StatsController;
 use App\Http\Controllers\ChartController;
 use App\Http\Controllers\Location\Planning\ChartController;
+use App\Http\Controllers\Location\Churchmatrix\StatsController;
+use App\Http\Controllers\ChartController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -206,7 +208,10 @@ Route::prefix('locations')->name('locations.')->group(function () {
             Route::get('/get/events', [SettingIntergration::class, 'getEvents'])->name('events');
             Route::get('/get/campuses', [SettingIntergration::class, 'getCampuses'])->name('campuses');
             Route::get('/get/times', [SettingIntergration::class, 'getServiceTimes'])->name('times');
+<<<<<<< HEAD
             Route::get('/get/categories', [SettingIntergration::class, 'getCategories'])->name('categories');
+=======
+>>>>>>> 8dedca2 (chanegs)
 
             Route::get('/update/times', [SettingIntergration::class, 'updateTimes'])->name('update.times');
             Route::get('/update/records', [SettingIntergration::class, 'updateRecords'])->name('update.records');
@@ -236,8 +241,11 @@ Route::prefix('locations')->name('locations.')->group(function () {
 
             Route::prefix('stats')->name('stats.')->group(function () {
                 Route::get('/', [StatsController::class, 'index'])->name('index');
+<<<<<<< HEAD
                 Route::get('/by/month/', [StatsController::class, 'timesChartData'])->name('month');
                 Route::get('/by/week/', [StatsController::class, 'getWeekStats'])->name('week');
+=======
+>>>>>>> 8dedca2 (chanegs)
             });
         });
     });
