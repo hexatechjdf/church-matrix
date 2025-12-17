@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Jobs\churchmatrix\ServiceTimeJob;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
+use Carbon\Carbon;
 
 class ServiceTimeController extends Controller
 {
@@ -110,7 +111,7 @@ class ServiceTimeController extends Controller
 
         $body = [
             'day_of_week'        => $data['day_of_week'],
-            'time_of_day'        => date('Y-m-d\TH:i:s\Z', strtotime($data['time_of_day'])),
+            'time_of_day'        =>   date('H:i:s\Z', strtotime($data['time_of_day'])),
             'date_start'         => $e ?  @$data['date_start'] : null,
             'date_end'           => $e ? @$data['date_end'] : null,
             'event_id'           => @$data['event_id'] ?? null,
@@ -119,14 +120,30 @@ class ServiceTimeController extends Controller
             'timezone'           => getUserTimeZone(),
         ];
 
-        $url = $request->service_time_id ? 'service_times/'.$request->service_time_id.'.json' : 'service_times.json';
-        $method = $request->id ? 'PUT' : 'POST';
 
-        $data = $this->service->request($method, $url, $body);
+        $url = $request->service_time_id ? 'service_times/'.$request->service_time_id.'.json' : 'service_times.json';
+
+        $method = $request->service_time_id ? 'PUT' : 'POST';
+
+        // dd($url,$method,$body);
+
+        $data = $this->service->request($method, $url, $body,false, null,true);
+
+        if(@$data['errors'])
+        {
+            $firstError = collect($data['errors'] ?? [])
+            ->flatten()
+            ->first();
+
+            return response()->json([
+                'error' => true,
+                'message' => @$firstError ?? 'API error occurred while saving service time.'
+            ]);
+        }
 
         if ($data === false) {
             return response()->json([
-                'success' => false,
+                'error' => true,
                 'message' => 'API error occurred while saving service time.'
             ]);
         }
@@ -138,6 +155,7 @@ class ServiceTimeController extends Controller
                 $body['event_name'] = @$data['event']['name'];
             }
             $id = @$data['id'] ?? $request->service_time_id ?? null;
+
             if($id)
             {
                 $d = ServiceTime::updateOrCreate(['cm_id' => $id],$body);

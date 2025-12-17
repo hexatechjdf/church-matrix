@@ -22,9 +22,10 @@ class AutoAuthController extends Controller
             $t = $req->type ?? 'planning';
             if ($req->has('location') && $req->has('token')) {
                 $location = $req->location;
-                $user = User::with('crmtoken')->where('location', $req->location)->when($t == 'churchmatrix',function($q){
-                    $q->where('role',0);
-                })->first();
+// ->when($t == 'churchmatrix',function($q){
+//                     $q->where('role',0);
+//                 })
+                $user = User::with('crmtoken')->where('location', $req->location)->first();
 
                 if (!$user) {
                     $user = new User();

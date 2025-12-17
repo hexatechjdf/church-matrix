@@ -283,7 +283,7 @@
                         </button>
 
                         <button class="btn btn-sm btn-danger rounded-circle shadow-sm action-btn"
-                            data-url="/locations/churchmatrix/integration/service-times/destroy/${data.id}"
+                            data-url="/locations/churchmatrix/integration/service-times/destroy/${data.cm_id}"
                             data-message="You want to delete '${data.event || 'Service Time'}'?"
                             data-success="Service Time deleted!"
                             data-table="serviceTimesTable"

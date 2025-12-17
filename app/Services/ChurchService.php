@@ -27,7 +27,7 @@ class ChurchService
 
     public function fetchEvents()
     {
-        $cacheKey = 'church_eventsss';
+        $cacheKey = 'church_events';
         return Cache::remember($cacheKey, 60 * 60, function () {
             $url = "events.json";
             list($data, $apiEvents) = $this->request('GET', $url, [], true);
@@ -144,6 +144,7 @@ class ChurchService
             } else {
                 throw new \Exception("Unsupported HTTP method: $method");
             }
+
 
             if($show_complete)
             {

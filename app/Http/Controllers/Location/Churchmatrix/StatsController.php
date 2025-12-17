@@ -76,6 +76,7 @@ class StatsController extends Controller
             ->orderBy('month')
             ->orderBy($groupY)
             ->get();
+
         $labels = [];
         $series = [];
 
@@ -104,27 +105,53 @@ class StatsController extends Controller
 
         $chartLabels = $records->pluck($column_x)->unique()->filter()->values();
         $times = $records->pluck($column_y)->unique()->filter()->values();
+
         $datasets = [];
+
         foreach ($times as $id) {
-            $attendanceData = $chartLabels->map(function ($week) use ($records, $id, $column_x,$column_y) {
-                $record = $records->filter(function ($item) use ($week, $id, $column_x,$column_y) {
-                    return $item->{$column_x} == $week && $item->{$column_y} == $id;
-                })->pluck('total_value')->toArray()[0] ?? 0;
 
-                return $record;
-            });
+            $attendanceData = array_fill(0, 12, 0);
 
-            if (count($attendanceData) > 0) {
-                $datasets[] = [
-                    // 'label' => $id,
-                    'name' => $id,
-                    'data' => $attendanceData,
-                    'backgroundColor' => 'rgba(' . rand(0, 255) . ',' . rand(0, 255) . ',' . rand(0, 255) . ',0.5)',
-                    'borderColor' => 'rgba(0,0,0,0.1)',
-                    'borderWidth' => 1
-                ];
+            foreach ($records as $record) {
+                if ($record->{$column_y} == $id) {
+                    $monthIndex = ((int) $record->{$column_x}) - 1; // month → 0-based
+                    $attendanceData[$monthIndex] = (float) $record->total_value;
+                }
             }
+
+            $datasets[] = [
+                'name' => $id,
+                'data' => $attendanceData,
+                'backgroundColor' => 'rgba(' . rand(0,255) . ',' . rand(0,255) . ',' . rand(0,255) . ',0.5)',
+                'borderColor' => 'rgba(0,0,0,0.1)',
+                'borderWidth' => 1
+            ];
         }
+
+
+        // $datasets = [];
+        // foreach ($times as $id) {
+        //     $attendanceData = $chartLabels->map(function ($week) use ($records, $id, $column_x,$column_y) {
+        //         $record = $records->filter(function ($item) use ($week, $id, $column_x,$column_y) {
+        //             return $item->{$column_x} == $week && $item->{$column_y} == $id;
+        //         })->pluck('total_value')->toArray()[0] ?? 0;
+
+        //         return $record;
+        //     });
+
+        //     if (count($attendanceData) > 0) {
+        //         $datasets[] = [
+        //             // 'label' => $id,
+        //             'name' => $id,
+        //             'data' => $attendanceData,
+        //             'backgroundColor' => 'rgba(' . rand(0, 255) . ',' . rand(0, 255) . ',' . rand(0, 255) . ',0.5)',
+        //             'borderColor' => 'rgba(0,0,0,0.1)',
+        //             'borderWidth' => 1
+        //         ];
+        //     }
+        // }
+
+        // dd($categories,$datasets);
 
         return response()->json([
             'categories'      => $categories,

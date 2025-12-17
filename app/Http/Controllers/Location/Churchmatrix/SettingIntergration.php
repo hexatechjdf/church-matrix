@@ -216,7 +216,7 @@ class SettingIntergration extends Controller
 
        dispatch(new ServiceTimeJob($user->id, $t));
 
-       return resposne()->json(['success' => true]);
+       return response()->json(['success' => true]);
     }
 
     public function updateRecords(Request $request)
@@ -229,6 +229,6 @@ class SettingIntergration extends Controller
 
         dispatch(new GetCampusesJob($token, $campus_id,$type));
 
-        return resposne()->json(['success' => true]);
+        return response()->json(['success' => true]);
     }
 }

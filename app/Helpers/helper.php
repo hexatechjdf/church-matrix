@@ -511,7 +511,6 @@ function _tokens_renew()
 function getChurchToken($mytoken = null,$id=null)
 {
     $user = loginUser($id);
-
     if($mytoken)
     {
         return $user->churchToken ?? null;

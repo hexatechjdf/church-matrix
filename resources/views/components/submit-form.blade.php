@@ -23,9 +23,10 @@
 
             success: function(response) {
                 if (response.success) {
-                    toastr.success(response.success);
-                } else {
-                    toastr.success("Success!");
+                    toastr.success(response.message);
+                }
+                 if(response.error) {
+                    toastr.error(response.message);
                 }
 
                 if (res == 'regions') {

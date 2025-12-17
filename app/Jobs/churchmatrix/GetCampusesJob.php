@@ -50,7 +50,8 @@ class GetCampusesJob implements ShouldQueue
 
             return;
         }
-        $campuses = $churchService->fetchCampuses();
+
+        $campuses = $churchService->fetchCampuses($user_token->user_id);
 
 
         if (empty($campuses)) {
@@ -60,7 +61,7 @@ class GetCampusesJob implements ShouldQueue
         $rows = collect($campuses)->map(function ($c) use ($t,$user_token) {
             return [
                 'campus_unique_id' => $c['id'],
-                'slug'             => $c['slug'] ?? null,
+                'name'             => @$c['slug'] ?? @$c['name'] ?? null,
                 'region_id'        => $c['region_id'] ?? null,
                 'description'      => $c['description'] ?? null,
                 'timezone'         => $c['timezone'] ?? null,
@@ -76,7 +77,7 @@ class GetCampusesJob implements ShouldQueue
             $rows,
             ['campus_unique_id'],
             [
-                'slug',
+                'name',
                 'region_id',
                 'description',
                 'timezone',

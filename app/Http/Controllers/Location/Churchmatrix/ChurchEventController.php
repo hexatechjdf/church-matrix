@@ -41,6 +41,7 @@ class ChurchEventController extends Controller
         $body = [
             'name' => $request->name,
         ];
+
         $url = $request->id ? 'events/'.$request->id.'.json' : 'events.json';
         $method = $request->id ? 'PUT' : 'POST';
 

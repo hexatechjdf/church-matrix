@@ -9,19 +9,7 @@ class ChartController extends Controller
 {
     public function index()
     {
-        $campuses = DB::table('church_records')
-            ->whereNotNull('campus_unique_id')
-            ->select('campus_unique_id')
-            ->distinct()
-            ->get();
-
-        $events = DB::table('church_records')
-            ->whereNotNull('event_unique_id')
-            ->select('event_unique_id')
-            ->distinct()
-            ->get();
-
-        return view('charts', compact('campuses', 'events'));
+        return view('event_filter');
     }
 
      public function getChartJSData(Request $request)
@@ -187,7 +175,6 @@ class ChartController extends Controller
             'datasets' => $datasets
         ]);
     }
-
 
 
     // billobard chart

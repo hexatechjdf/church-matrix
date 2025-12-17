@@ -16,7 +16,7 @@
 
         @if ($is_show)
             @include('components.church-matrix-keys')
-            @if ($user->role == 0)
+            {{-- @if ($user->role == 0)
                 <div class="col-lg-12">
                     <div class="card-modern">
                         <div class="card-header-modern warning  bg-warning">
@@ -28,7 +28,7 @@
                         </div>
                     </div>
                 </div>
-            @endif
+            @endif --}}
         @else
             <div class="alert alert-warning d-flex align-items-center" role="alert">
                 <i class="fa-solid fa-triangle-exclamation me-2"></i>

@@ -73,6 +73,11 @@ class ManageCampusJob implements ShouldQueue
                 // dispatch((new GetRecordsCampusJob($c->campus_unique_id,$current_user->id)))->delay(5);
             }
         }
+        else{
+            $c->user_id = $current_user->id;
+            $c->location_id = $current_user->location;
+            $c->save();
+        }
     }
 
 }

@@ -30,7 +30,7 @@ class RecordController extends Controller
 
            $records = ChurchRecord::when(!$user->church_admin,function($q)use($user){
                 $campus = @$user->campus;
-                $q->where('campus_id', $campus->campus_unique_id);
+                $q->where('campus_unique_id', $campus->campus_unique_id);
             })->when($user->church_admin,function($q)use($user){
                 $q->where('user_id', $user->id);
             })->orderBy('id', 'DESC');
@@ -83,6 +83,7 @@ class RecordController extends Controller
         $user = loginUser();
         $id   = $request->record_id;
 
+
         $campus_id = $this->service->getUserCampusId($request,$user);
         try{
             if(!$id)
@@ -130,7 +131,6 @@ class RecordController extends Controller
     public function createApiData($request,$user,$campus_id)
     {
         $event_id        = $request->event_id;
-        $campus_id       = $request->campus_id;
         $service_time_id = $request->service_time_id;
         $category_id     = $request->category_id;
         $value           = $request->value;
@@ -148,10 +148,11 @@ class RecordController extends Controller
             "value"             =>  $value,
             "replaces"          =>  true,
             "event_id"          =>  $event_id,
+            "service_date_time"          =>  $servicetime,
         ];
 
         // $id ? 'records/'.$id.'.json' :
-        return  $this->service->request('POST', 'records.json', $data,false, null,true);
+       return   $this->service->request('POST', 'records.json', $data,false, null,true);
     }
 
     public function updateApiData($request,$user,$id,$campus_id)

@@ -189,7 +189,9 @@
                                     <th>Week</th>
                                     <th>Service Date</th>
                                     <th>Value</th>
+                                    @if ($user->church_admin)
                                     <th>Campus</th>
+                                    @endif
                                     <th>Event</th>
                                     <th>Actions</th>
                                 </tr>
@@ -265,7 +267,8 @@
                             data: 'campus_name',
                             name: 'campus_name'
                         },
-                    @endif {
+                    @endif
+                    {
                         data: 'event_name',
                         name: 'event_name'
                     },
