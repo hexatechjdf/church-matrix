@@ -2,457 +2,338 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Church Metric Chart</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planning Center • Full Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+      min-height: 100vh;
+      padding: 30px 20px;
+      color: #1e293b;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #858794 0%, #7f7e80 100%);
-            min-height: 100vh;
-            padding: 30px 20px;
-            color: #333;
-        }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
 
-        .dashboard {
-            max-width: 1300px;
-            margin: 0 auto;
-        }
+    .header h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
 
-        .filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+      padding: 28px;
+      margin-bottom: 40px;
+      border: 1px solid rgba(139, 92, 246, 0.1);
+    }
 
-        .filter-group {
-            position: relative;
-        }
+    .chart-title {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #4c1d95;
+    }
 
-        .filter-group select {
-            width: 100%;
-            padding: 14px 40px 14px 16px;
-            border: none;
-            border-radius: 12px;
-            background: white;
-            font-size: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            appearance: none;
-            cursor: pointer;
-        }
+    .reset-btn {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border: none;
+      font-weight: 600;
+      height: 52px;
+      border-radius: 14px;
+    }
 
-        .filter-group i {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #667eea;
-            pointer-events: none;
-        }
+    .reset-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
+    }
 
-        .week-picker {
-            position: relative;
-        }
-
-        .week-trigger {
-            width: 100%;
-            padding: 14px 16px;
-            border: none;
-            border-radius: 12px;
-            background: white;
-            font-size: 15px;
-            font-weight: 500;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .week-trigger:hover {
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .week-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            margin-top: 8px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.22);
-            overflow: hidden;
-            z-index: 1000;
-            display: none;
-            flex-direction: row;
-        }
-
-        .week-dropdown.open {
-            display: flex;
-        }
-
-        .week-buttons {
-            background: #f8f9fa;
-            padding: 16px 8px;
-            width: 140px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .week-btn {
-            padding: 10px 12px;
-            border: none;
-            background: #e9ecef;
-            border-radius: 10px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .week-btn:hover {
-            background: #dee2e6;
-        }
-
-        .week-btn.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .mini-calendar {
-            padding: 4px;
-            min-width: 231px;
-        }
-
-        .cal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .cal-month {
-            font-size: 15px;
-        }
-
-        .cal-weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 6px;
-        }
-
-        .cal-days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 0px;
-            text-align: center;
-        }
-
-        .cal-day {
-            width: 32px;
-            height: 32px;
-            line-height: 32px;
-            border-radius: 50%;
-            font-size: 13px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .cal-day:hover {
-            background: #e9ecef;
-        }
-
-        .cal-day.today {
-            background: #28a745;
-            color: white;
-            font-weight: bold;
-        }
-
-        .cal-day.in-week {
-            background: #e3f2fd;
-            color: #1976d2;
-            font-weight: bold;
-        }
-
-        .chart-container {
-            background: rgba(255, 255, 255, 0.97);
-            backdrop-filter: blur(12px);
-            padding: 40px;
-            border-radius: 25px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .chart-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
-            background-size: 200%;
-            animation: gradientShift 4s ease infinite;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            height: 420px;
-        }
-
-        @keyframes gradientShift {
-
-            0%,
-            100% {
-                background-position: 0% 50%
-            }
-
-            50% {
-                background-position: 100% 50%
-            }
-        }
-    </style>
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 25px;
+    }
+    .chart-average{
+        text-align: center;
+    }
+  </style>
 </head>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/billboard.js/dist/billboard.min.css">
 
 <body>
     @yield('content')
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="https://cdn.jsdelivr.net/npm/billboard.js/dist/billboard.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
-
     <script>
-        let currentDate = new Date();
-        // const chartCtx = document.getElementById('myChart').getContext('2d');
-        // const chart = new Chart(chartCtx, {
-        //     type: 'bar',
-        //     data: {
-        //         labels: [],
-        //         datasets: []
-        //     },
-        //     options: {
-        //         responsive: true,
-        //         maintainAspectRatio: false,
-        //         plugins: {
-        //             legend: {
-        //                 position: 'top'
-        //             },
-        //             tooltip: {
-        //                 mode: 'index',
-        //                 intersect: false
-        //             }
-        //         },
-        //         scales: {
-        //             y: {
-        //                 beginAtZero: true
-        //             }
-        //         }
-        //     }
-        // });
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const fullMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    let lineChart = null,
+      barChart = null,
+      pieChart = null,
+      eventsChart = null;
 
-        function getWeekStart(d) {
-            const date = new Date(d);
-            const day = date.getDay();
-            date.setDate(date.getDate() - day);
-            return date;
-        }
+      function calculateTotal(seriesData) {
+      return seriesData.reduce((sum, s) => sum + s.data.reduce((a, b) => a + b, 0), 0);
+    }
 
-        function getWeekEnd(d) {
-            const date = new Date(d);
-            const day = date.getDay();
-            date.setDate(date.getDate() + (6 - day));
-            return date;
-        }
+    let currentAttendances = {};
+    let eventsObject = {};
 
-        function updateSelectedWeek() {
-            const start = getWeekStart(currentDate);
-            const end = getWeekEnd(currentDate);
-            window.selectedWeekStart = start.toISOString().split('T')[0];
-            window.selectedWeekEnd = end.toISOString().split('T')[0];
-            loadChartData();
-        }
+    function loadAllEvents() {
+      $.get("/locations/planningcenter/events")
+        .done(function(res) {
+          const events = res.data;
+          ['line', 'bar', 'pie'].forEach(type => {
+            const $select = $(`#events-${type}`);
+            $select.html('<option value="">All Events</option>');
+            events.forEach(e => {
+              eventsObject[e.id] = e;
+              currentAttendances[e.id] = (e.relationships?.attendance_types?.data || []).map(t => ({
+                ...t,
+                ...res.included[t.type + '.' + t.id].attributes
+              }));
+              $select.append(`<option value="${e.id}">${e.attributes.name}</option>`);
+            });
+          });
+        });
+    }
 
-        async function loadChartData() {
-            const filters = {
-                campus: document.getElementById("campusFilter").value,
-                event: document.getElementById("eventFilter").value,
-                week_start: window.selectedWeekStart ?? "",
-                week_end: window.selectedWeekEnd ?? ""
+    $('body').on('change', '[id^="events-"]', function() {
+      const panel = this.closest('.card');
+      const attSelect = panel.querySelector('[id^="attendanceType-"]');
+      if (!attSelect) return;
+      const eventId = this.value;
+      $(attSelect).html('<option value="">All Types</option>');
+      if (eventId && currentAttendances[eventId]) {
+        currentAttendances[eventId].forEach(t => {
+          $(attSelect).append(`<option value="${t.id}">${t.name}</option>`);
+        });
+      }
+    });
+
+    function loadChart(type) {
+      const yearSelect = `#${type}YearSelect`;
+      const monthSelect = type === 'line' || type === 'bar' ? `#${type}MonthSelect` : null;
+      const year = $(yearSelect).val() || new Date().getFullYear();
+      const months = monthSelect ? $(monthSelect).val() : null;
+      const endpoint = type === 'pie' ? '/apex-pie-data' : '/get-chart-json';
+
+      $.get(endpoint, {
+          year,
+          months
+        })
+        .done(function(res) {
+          $(yearSelect).empty();
+          (res.available_years || []).forEach(y => $(yearSelect).append(`<option value="${y}" ${y == year ? 'selected' : ''}>${y}</option>`));
+
+          const seriesData = (res.series || []).map(s => ({
+            name: s.name,
+            data: s.data
+          }));
+
+          let total = 0;
+          let count = 0;
+          if (type === 'pie') {
+            total = res.values.reduce((a, b) => a + b, 0);
+            count = res.values.length || 1;
+            $(`#${type}Avg`).text(`Average attendance: ${Math.round(total / count)}`);
+          } else if (type === 'events') {
+            const eventNames = seriesData.map(s => s.name);
+            total = calculateTotal(seriesData);
+            count = eventNames.length || 1;
+            $(`#${type}Avg`).text(`Average attendance: ${Math.round(total / count)}`);
+          } else {
+            total = calculateTotal(seriesData);
+            count = (months ? months.length : 12) || 1;
+            $(`#${type}Avg`).text(`Average attendance: ${Math.round(total / count)}`);
+          }
+
+          if (type === 'line') {
+            const options = {
+              chart: {
+                type: 'area',
+                height: 500
+              },
+              series: seriesData,
+              xaxis: {
+                categories: res.categories
+              },
+              title: {
+                text: `${year} Trend`
+              }
             };
-            const params = new URLSearchParams(filters).toString();
-
-            const res = await fetch(`/charts/data?${params}`);
-            const result = await res.json();
-            const allValues = _(result.json)
-                .groupBy("month_year")
-                .map((items, month) => {
-                    const base = {
-                        month_year: month,
-                        first_created_date: items[0].first_created_date
-                    };
-
-                    // Add dynamic keys
-                    items.forEach(i => {
-                        base[i.attendance_id] = i.attendance_count;
-                    });
-
-                    return base;
-                })
-                .value();
-
-            console.log(result);
-            const chart = bb.generate({
-                size: {},
-                data: {
-
-                    json: allValues,
-                    keys: {
-                        x: result.keys.name,
-                        value: result.keys.values
-                    },
-                    groups: [
-                        result.keys.values
-                    ],
-                    type: "bar" // smooth line
-
-                },
-                tooltip: {
-                    contents: function(data, defaultTitleFormat, defaultValueFormat, color) {
-
-                        console.log(data);
-                        // find original json row
-                        data = data.filter(t => t.value != null);
-
-                        let row = chart.config().data.json[data[0].x][result.keys.name];
-
-                        const total = data.reduce((sum, val) => sum + val.value, 0);
-                        let html = `<table class="bb-tooltip"><tbody>`;
-                        html += `<tr><th colspan="2">${row}</th></tr>`;
-
-                        // Show normal dataset values
-                        data.forEach(d => {
-                            html += `
-          <tr>
-            <td style="color:${color(d)}">${d.id}</td>
-            <td>${d.value}</td>
-          </tr>
-        `;
-                        });
-
-                        // Add custom TOTAL row
-                        html += `
-        <tr style="font-weight:bold;">
-          <td>Total</td>
-          <td>${total}</td>
-        </tr>
-      `;
-
-                        html += `</tbody></table>`;
-                        return html;
-                    }
-                },
-                axis: {
-                    x: {
-                        type: "category"
-                    }
-                },
-                point: {
-                    r: 4 // size of points
-                },
-                bindto: "#chart"
-            });
-
-            // chart.data.labels = result.labels;
-            // chart.data.datasets = result.datasets;
-            // chart.update();
-        }
-
-        function renderCalendar() {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const monthNames = ["January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
-            ];
-
-            let html = `<div class="cal-header"><span class="cal-month">${monthNames[month]} ${year}</span></div>`;
-            html += `<div class="cal-weekdays">
-                <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
-            </div>`;
-            html += '<div class="cal-days">';
-            for (let i = 0; i < firstDay; i++) html += '<div></div>';
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(year, month, day);
-                const today = new Date();
-                let classes = 'cal-day';
-                if (date.toDateString() === today.toDateString()) classes += ' today';
-                if (date >= getWeekStart(currentDate) && date <= getWeekEnd(currentDate)) classes += ' in-week';
-                html += `<div class="${classes}" onclick="selectDate(${year},${month},${day})">${day}</div>`;
+            if (lineChart) lineChart.updateOptions(options);
+            else {
+              lineChart = new ApexCharts(document.getElementById('lineChart'), options);
+              lineChart.render();
             }
-            html += '</div>';
-            document.getElementById('miniCalendar').innerHTML = html;
-        }
+          } else if (type === 'bar') {
+            const options = {
+              chart: {
+                type: 'bar',
+                height: 600,
+                stacked: true
+              },
+              plotOptions: {
+                bar: {
+                  horizontal: true,
+                  borderRadius: 8
+                }
+              },
+              series: seriesData,
+              xaxis: {
+                categories: res.categories,
+                title: {
+                  text: 'Headcount'
+                }
+              },
+              yaxis: {
+                title: {
+                  text: 'Month'
+                }
+              }
+            };
+            if (barChart) barChart.updateOptions(options);
+            else {
+              barChart = new ApexCharts(document.getElementById('barChart'), options);
+              barChart.render();
+            }
+          } else if (type === 'pie') {
+            const options = {
+              chart: {
+                type: 'pie',
+                height: 500
+              },
+              series: res.values,
+              labels: res.labels,
+              title: {
+                text: ``
+              }
+            };
+            if (pieChart) pieChart.updateOptions(options);
+            else {
+              pieChart = new ApexCharts(document.getElementById('pieChart'), options);
+              pieChart.render();
+            }
+          } else if (type === 'events') {
+            const eventNames = seriesData.map(s => s.name);
+            const monthSeries = fullMonthNames.map((m, i) => ({
+              name: m,
+              data: eventNames.map(name => {
+                const s = seriesData.find(x => x.name === name);
+                return s ? (s.data[i] || 0) : 0;
+              })
+            }));
 
-        function updateWeekDisplay() {
-            const start = getWeekStart(currentDate);
-            document.getElementById('weekText').textContent = `Week of ${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-            renderCalendar();
-            document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.week-btn[data-week="0"]`).classList.add('active');
-            updateSelectedWeek();
-        }
-
-        window.selectDate = function(y, m, d) {
-            currentDate = new Date(y, m, d);
-            updateWeekDisplay();
-            document.getElementById('weekDropdown').classList.remove('open');
-        };
-
-        document.querySelectorAll('.week-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const offset = parseInt(btn.dataset.week) * 7;
-                currentDate = new Date();
-                currentDate.setDate(currentDate.getDate() + offset);
-                updateWeekDisplay();
-                document.getElementById('weekDropdown').classList.remove('open');
-            });
+            const options = {
+              chart: {
+                type: 'bar',
+                height: Math.max(600, eventNames.length * 80),
+                stacked: true,
+                toolbar: {
+                  show: true
+                }
+              },
+              plotOptions: {
+                bar: {
+                  horizontal: true,
+                  borderRadius: 8
+                }
+              },
+              series: monthSeries,
+              xaxis: {
+                categories: eventNames,
+                title: {
+                  text: 'Headcount'
+                }
+              },
+              yaxis: {
+                title: {
+                  text: 'Events'
+                },
+                labels: {
+                  maxWidth: 500
+                }
+              },
+              title: {
+                text: ``,
+                align: 'center',
+                style: {
+                  fontSize: '18px',
+                  color: '#4c1d95'
+                }
+              },
+              legend: {
+                position: 'top'
+              },
+              dataLabels: {
+                enabled: true
+              },
+              colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2', '#F5576C', '#43AA8B']
+            };
+            if (eventsChart) eventsChart.updateOptions(options);
+            else {
+              eventsChart = new ApexCharts(document.getElementById('eventsChart'), options);
+              eventsChart.render();
+            }
+          }
         });
+    }
 
-        document.getElementById('weekTrigger').addEventListener('click', e => {
-            e.stopPropagation();
-            document.getElementById('weekDropdown').classList.toggle('open');
-            renderCalendar();
-        });
+    $('#lineMonthSelect, #barMonthSelect').select2({
+      placeholder: "All months",
+      allowClear: true
+    });
+    fullMonthNames.forEach((m, i) => $('#lineMonthSelect, #barMonthSelect').append(new Option(m, i + 1)));
 
-        document.addEventListener('click', () => {
-            document.getElementById('weekDropdown').classList.remove('open');
-        });
+    $('#lineYearSelect, #lineMonthSelect').on('change', () => loadChart('line'));
+    $('#lineResetBtn').on('click', () => {
+      $('#lineYearSelect').val(new Date().getFullYear());
+      $('#lineMonthSelect').val(null).trigger('change');
+      loadChart('line');
+    });
 
-        document.getElementById('campusFilter').addEventListener('change', loadChartData);
-        document.getElementById('eventFilter').addEventListener('change', loadChartData);
+    $('#barYearSelect, #barMonthSelect').on('change', () => loadChart('bar'));
+    $('#barResetBtn').on('click', () => {
+      $('#barYearSelect').val(new Date().getFullYear());
+      $('#barMonthSelect').val(null).trigger('change');
+      loadChart('bar');
+    });
 
-        // Initial render
+    $('#pieYearSelect').on('change', () => loadChart('pie'));
+    $('#pieResetBtn').on('click', () => {
+      $('#pieYearSelect').val(new Date().getFullYear());
+      loadChart('pie');
+    });
 
-        loadChartData();
-    </script>
+    $('#eventsYearSelect').on('change', () => loadChart('events'));
+    $('#eventsResetBtn').on('click', () => {
+      $('#eventsYearSelect').val(new Date().getFullYear());
+      loadChart('events');
+    });
 
+    loadAllEvents();
+    loadChart('line');
+    loadChart('bar');
+    loadChart('pie');
+    loadChart('events');
+  </script>
 </body>
 
 </html>

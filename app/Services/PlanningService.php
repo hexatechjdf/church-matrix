@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CrmToken;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -16,7 +17,7 @@ class PlanningService
         $type = 'planning_access_token';
         $baseurl = $this->base;
 
-        $user_id  = request()->user_id ?? 884;
+        $user_id  = request()->user_id ?? 883;
         $user = loginUser($user_id);
 
         $crm = $crm ?? $user->planningToken;
@@ -174,19 +175,18 @@ class PlanningService
         }
     }
 
-    public function getHeadcounts($offset, $token = null,$filter = null)
+    public function getHeadcounts($offset, $token = null, $filter = null)
     {
-        $url = "check-ins/v2/headcounts?include=attendance_type,event_time,event&per_page=1000&offset=".$offset;
-       
-        $query = [];
-        if($filter){
+        $url = "check-ins/v2/headcounts?include=attendance_type,event_time,event&per_page=1000&offset=" . $offset;
 
-            foreach($filter as $key=>$value){
-                $query['where'.$key] = $value;
+        $query = [];
+        if ($filter) {
+
+            foreach ($filter as $key => $value) {
+                $query['where' . $key] = $value;
             }
-            
         }
-        
+
 
         if (!empty($query)) {
             $url .= "&" . http_build_query($query);
@@ -194,5 +194,20 @@ class PlanningService
         //  dd($url);
 
         return $this->planning_api_call($url, 'get', '', [], false, $token);
+    }
+
+    public function getEvents($offset, $token = null)
+    {
+        $url = "check-ins/v2/events?include=attendance_types&per_page=1000&offset=" . $offset;
+        return $this->planning_api_call($url, 'get', '', [], false, $token);
+    }
+
+    public function buildIncludedMap(array $included): Collection
+    {
+
+        $included  = collect($included)->keyBy(function ($item) {
+            return $item->type . '.' . $item->id;  // "Event.123"
+        });
+        return $included;
     }
 }
