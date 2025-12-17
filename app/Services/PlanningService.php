@@ -12,103 +12,136 @@ class PlanningService
 {
     public $base = 'https://api.planningcenteronline.com/';
 
+    protected int $user_id;
+    protected string $token;
+
+    /**
+     * Constructor to set user_id and token
+     */
+    public function setUserToken(int $user_id, string $token)
+    {
+        $this->user_id = $user_id;
+        $this->token = $token;
+    }
+
     function planning_api_call($url = '', $method = 'get', $data = '', $headers = [], $json = false, $a_token = null, $crm = null)
     {
+
+        // $this->tokens_renew();
         $type = 'planning_access_token';
         $baseurl = $this->base;
 
-        $user_id  = request()->user_id ?? 883;
+
+        // make it by function parameter
+        $user_id = $this->user_id ?? request()->user_id;
+        // ..........
+
         $user = loginUser($user_id);
 
-        $crm = $crm ?? $user->planningToken;
-        //  dd($crm);
 
-        if (is_null($a_token)) {
+        $crm = $this->token ?? $crm ?? $user->planningToken;
+
+        if (is_null($a_token) && !@$this->token) {
             $bearer = $crm->access_token;
         } else {
-            $bearer =  $a_token;
+            $bearer = $this->token ?? $a_token;
         }
 
         if (empty($bearer)) {
-            return '';
+            // Return empty object instead of empty string
+            return (object) ['data' => [], 'included' => [], 'meta' => []];
         }
 
         $location = @$user->crmtoken->location_id;
         request()->location_id = $location;
         $headers['Authorization'] = 'Bearer ' . $bearer;
         $headers['Content-Type'] = "application/json";
-        $client = new \GuzzleHttp\Client(['http_errors' => false, 'headers' => $headers]);
 
-        $options = [];
-        if (!empty($data) && $method != 'get') {
-            $options['body'] = $data;
-        }
-        $url1 = $baseurl . $url;
+        try {
+            $client = new \GuzzleHttp\Client([
+                'http_errors' => false,
+                'headers' => $headers,
+                'timeout' => 30, // Add timeout
+                'connect_timeout' => 10,
+            ]);
+
+            $options = [];
+            if (!empty($data) && $method != 'get') {
+                $options['body'] = $data;
+            }
+
+            $url1 = $baseurl . $url;
+        \Log::info($url1);
+         \Log::info($bearer);
 
 
-        $response = $client->request($method, $url1, $options);
-        $bd = $response->getBody()->getContents();
-        $isaccessdenied = false;
-        if (strpos($bd, 'HTTP Basic: Access denied') !== false) {
-            $isaccessdenied = true;
-        }
+            $response = $client->request($method, $url1, $options);
+            $bd = $response->getBody()->getContents();
+              \Log::info([$bd]);
 
-        $bd = json_decode($bd);
+            // Check for access denied
+            if (strpos($bd, 'HTTP Basic: Access denied') !== false) {
+                return (object) ['data' => [], 'included' => [], 'meta' => []];
+            }
 
-        if (($bd && property_exists($bd, 'errors') && is_array($bd->errors) && count($bd->errors) > 0 && property_exists($bd->errors[0], 'code') && strtolower($bd->errors[0]->code) == 'unauthorized') || $isaccessdenied) {
-            $refresh_token = $crm->refresh_token;
-            // dd($bd);
+            $bd = json_decode($bd);
 
-            $lck = Cache::lock('planning_cache_lock_' . $user_id, 40);
-            $is_refresh = false;
-            try {
-                list($is_refresh, $a_token) = $lck->block(40, function () use ($user_id, $refresh_token, $crm) {
-                    // $newrefresh_token = $crm->refresh_token;
-                    // if($newrefresh_token==''){
-                    //     return [false,''];
-                    // }
-                    // if($refresh_token!=$refresh_token){
-                    //     return [true,''];
-                    // }
+            // Handle unauthorized errors
+            if ($bd && property_exists($bd, 'errors') && is_array($bd->errors) && count($bd->errors) > 0) {
+                foreach ($bd->errors as $error) {
+                    if (property_exists($error, 'code') && strtolower($error->code) == 'unauthorized') {
+                        $refresh_token = @$crm->refresh_token ?? '';
+                        if(empty($refresh_token))
+                        {
+                            break;
+                        }
+                        $lck = Cache::lock('planning_cache_lock_' . $user_id, 40);
+                        $is_refresh = false;
+                        $new_token = null;
 
-                    $payload = [];
-                    $code = $this->get_planning_token($refresh_token, 'refresh_token');
-                    // dd($code);
-                    if ($code && property_exists($code, 'access_token')) {
-                        $payload = [
-                            'access_token' => $code->access_token,
-                            'refresh_token' => $code->refresh_token,
-                        ];
-                        $this->saveToken($user_id, $payload);
-                        return [true, $code->access_token];
+                        try {
+                            list($is_refresh, $new_token) = $lck->block(40, function () use ($user_id, $refresh_token, $crm) {
+                                $code = $this->get_planning_token($refresh_token, 'refresh_token');
+
+                                if ($code && property_exists($code, 'access_token')) {
+                                    $payload = [
+                                        'access_token' => $code->access_token,
+                                        'refresh_token' => $code->refresh_token,
+                                    ];
+                                    $this->saveToken($user_id, $payload);
+                                    return [true, $code->access_token];
+                                }
+
+                                if (
+                                    $code && property_exists($code, 'error_description') &&
+                                    $code->error_description == 'The refresh token is no longer valid'
+                                ) {
+                                    $payload = [
+                                        'access_token' => null,
+                                        'refresh_token' => null,
+                                    ];
+                                    $this->saveToken($user_id, $payload);
+                                }
+                                return [false, null];
+                            });
+                        } catch (\Exception $e) {
+                            \Log::error('Token refresh failed: ' . $e->getMessage());
+                        }
+
+                        if ($is_refresh && $new_token) {
+                            return $this->planning_api_call($url, $method, $data, $headers, $json, $new_token);
+                        }
+
+                        return (object) ['data' => [], 'included' => [], 'meta' => []];
                     }
-                    if ($code && property_exists($code, 'error_description') && $code->error_description == 'The refresh token is no longer valid') {
-                        $payload = [
-                            'access_token' => $user_id,
-                            'refresh_token' => $user_id,
-                            'company_id' => $user_id,
-                            'organization_name' => $user_id,
-                        ];
-                        $this->saveToken($user_id, $payload);
-                    }
-                    return [false, ''];
-                });
-            } catch (\Exception $e) {
+                }
             }
 
-            if ($is_refresh) {
-                return $this->planning_api_call($url, $method, $data, $headers, $json, $a_token);
-            }
-
-            if (session('is_login_res')) {
-                $res = session('is_login_res');
-                session()->forget('is_login_res');
-                response()->json($res)->send();
-                die();
-            }
-            return '';
+            return $bd ?: (object) ['data' => [], 'included' => [], 'meta' => []];
+        } catch (\Exception $e) {
+            \Log::error('Planning API call failed: ' . $e->getMessage());
+            return (object) ['data' => [], 'included' => [], 'meta' => []];
         }
-        return $bd;
     }
 
     public function saveToken($user_id, $data)
@@ -145,6 +178,8 @@ class PlanningService
         return $bd;
     }
 
+
+
     // Renew token cron job
     public function tokens_renew()
     {
@@ -175,24 +210,39 @@ class PlanningService
         }
     }
 
-    public function getHeadcounts($createdDate = null, $updatedDate = null, $token = null)
+    public function getHeadcounts($offset, $token = null, $filter = null)
     {
-        $url = "check-ins/v2/headcounts?include=attendance_type,event_time,event&per_page=1000";
+        $url = "check-ins/v2/headcounts?include=attendance_type,event_time,event&per_page=1000&offset=" . $offset;
 
         $query = [];
+        if ($filter) {
 
-        if ($createdDate) {
-            $query['where[created_at]'] = $createdDate;
+            foreach ($filter as $key => $value) {
+                $query['where' . $key] = $value;
+            }
         }
 
-        if ($updatedDate) {
-            $query['where[updated_at]'] = $updatedDate;
-        }
 
         if (!empty($query)) {
             $url .= "&" . http_build_query($query);
         }
+        //  dd($url);
 
         return $this->planning_api_call($url, 'get', '', [], false, $token);
+    }
+
+    public function getEvents($offset, $token = null)
+    {
+        $url = "check-ins/v2/events?include=attendance_types&per_page=1000&offset=" . $offset;
+        return $this->planning_api_call($url, 'get', '', [], false, $token);
+    }
+
+    public function buildIncludedMap(array $included): Collection
+    {
+
+        $included  = collect($included)->keyBy(function ($item) {
+            return $item->type . '.' . $item->id;  // "Event.123"
+        });
+        return $included;
     }
 }

@@ -10,6 +10,8 @@ use App\Http\Controllers\PlanningCenterController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\Location\Churchmatrix\IndexController;
 use App\Http\Controllers\Location\Planning\PlanningController;
+use App\Http\Controllers\Location\Planning\HeadCountController;
+use App\Http\Controllers\Location\Planning\ChartController;
 use App\Http\Controllers\Location\AutoAuthController;
 use App\Http\Controllers\ChurchMatrixController;
 use App\Http\Controllers\Location\Churchmatrix\TimeZoneController;
@@ -18,7 +20,6 @@ use App\Http\Controllers\Location\Churchmatrix\RecordController;
 use App\Http\Controllers\Location\Churchmatrix\ServiceTimeController;
 use App\Http\Controllers\Location\Churchmatrix\SettingIntergration;
 use App\Http\Controllers\Location\Churchmatrix\StatsController;
-use App\Http\Controllers\ChartController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -255,53 +256,44 @@ Route::prefix('locations')->name('locations.')->group(function () {
         Route::get('listworkflows', [$c, 'listworkflows'])->name('listworkflows');
         Route::get('disconnectplanning', [$c, 'disconnectplanning'])->name('disconnectplanning');
 
+        Route::prefix('headcounts')->name('headcounts.')->group(function () {
+            Route::get('/', [HeadCountController::class, 'index'])->name('index');
+        });
 
-        Route::get('/headcounts/visualization', [$c, 'headCountGraphs'])->name('headcount.visuals');
+        Route::get('/event-filter', [ChartController::class, 'index'])->name('event.filter');
+        Route::get('/get-chart-json', [ChartController::class, 'getChartJson'])->name('chart.json');
+        Route::get('/get-pie-chart-data', [ChartController::class, 'getPieChartData'])->name('pie.chart.data');
+        Route::get('/get-events-chart-data', [ChartController::class, 'getEventsChartData'])->name('events.chart.data');
+        Route::get('/get-line-chart-data', [ChartController::class, 'getLineChartData'])->name('line.chart.data');
+
+        Route::get('/get-guest-chart-data', [ChartController::class, 'getGuestChartData'])->name('guest.chart.data');
+
+        Route::get('/headcounts/visualization', [$c, 'headCountSetting'])->name('visuals');
     });
+
+
 });
 
 
 Route::get('/test/eventtimes', [PlanningController::class, 'eventtimes']);
-
 Route::get('check/auth', [AutoAuthController::class, 'connect'])->name('auth.check');
-// Route::get('check/auth', [DashboardController::class, 'authCheck'])->name('auth.check');
 Route::get('checking/auth', [AutoAuthController::class, 'authChecking'])->name('auth.checking');
-// Route::get('checking/auth', [DashboardController::class, 'authChecking'])->name('auth.checking');
-
 Route::get('planning', [DashboardController::class, 'planning'])->name('auth.planning');
-
-
-// Route::get('check/auth', [AutoAuthController::class, 'connect'])->name('auth.check');
 Route::get('check/auth/error', [AutoAuthController::class, 'authError'])->name('error');
-// Route::get('checking/auth', [AutoAuthController::class, 'authChecking'])->name('auth.checking');
+
+Route::get('/fetch/headcounts', [HeadCountController::class, 'fetchLastHeadcounts'])->name('fetch.headcounts');
 
 Route::get('/ll', function () {
     Auth::loginUsingId(1);
     return redirect()->route('dashboard');
 });
 
-// Cron Job
+
 Route::get('/tokens_renew', function () {
 
     tokens_renew();
 })->name('tokens_renew');
 
-
-
-
-// use App\Models\ChurchEvent;
-// use App\Services\ChurchEventService;
-
-// Route::get('/sync-events', function(ChurchEventService $service){
-//     $events = ChurchEvent::whereNull('cm_id')->get();
-//     foreach($events as $event){
-//         $cm_id = $service->createEventToAPI($event->name);
-//         if($cm_id){
-//             $event->update(['cm_id' => $cm_id]);
-//         }
-//     }
-//     return "Sync completed!";
-// });
 
 Route::get('/get-charts', function () {
       return view('charts');

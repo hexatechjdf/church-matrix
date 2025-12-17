@@ -440,15 +440,17 @@ class PlanningCenterController extends Controller
 
     public function getEvents(Request $request)
     {
-        $user  = loginUser();
-        $crm = $user->planningToken??null;
+        $user = loginUser();
+        $crm = $user->planningToken ?? null;
+        // dd($user, $crm);
         request()->user_id = $crm->user_id;
-        request()->location  =$crm->location;
+        request()->location =$crm->location;
         $offset = $request->offset ?? 0;
         $response = $this->planningService->getEvents($offset,$crm->access_token);
         $data = $response->data ?? [];
         $includes = $this->planningService->buildIncludedMap($response->included ?? []);
         $hasMore = $response->meta->next ??null;
+
         return response()->json(['status' => true, 'data' => $data, 'included' => $includes,'hasMore'=>$hasMore]);
     }
 }

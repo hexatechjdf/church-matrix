@@ -6,14 +6,24 @@ use Illuminate\Http\Request;
 use App\Models\CrmToken;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Services\PlanningService;
+
 
 
 class ChartController extends Controller
 {
 
+    private $planningService;
+
+    public function __construct(PlanningService $planningService)
+    {
+        $this->planningService = $planningService;
+    }
+
+
     public function index()
     {
-        return view('event_filter');
+        return view('locations.planning.event_filter');
     }
 
 
@@ -90,129 +100,86 @@ class ChartController extends Controller
     }
 
 
- public function getPieChartData(Request $request)
-{
-    $year = $request->input('year', date('Y'));
-    $userToken = CrmToken::where('user_id', 883)->first()->access_token ?? '';
+    public function getPieChartData(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        $eventId = $request->input('event_id');
 
-    $results = DB::table('events_data')
-        ->whereYear('service_date', $year)
-        ->whereNotNull('attendance_id')
-        ->select('attendance_id', DB::raw('SUM(value) as total'))
-        ->groupBy('attendance_id')
-        ->get();
+        $userId = 883;
+        $token = CrmToken::where('user_id', $userId)
+            ->where('crm_type', 'planning')
+            ->first();
 
-    if ($results->isEmpty()) {
+        if (!$token || !$token->access_token) {
+            return response()->json([
+                'labels' => ['No Token'],
+                'values' => [1],
+                'years' => [$year]
+            ]);
+        }
+
+        $userToken = $token->access_token;
+        $query = DB::table('events_data')
+            ->whereYear('service_date', $year)
+            ->where('value', '>', 0)
+            ->whereNotNull('attendance_id');
+
+        if ($eventId) {
+            $query->where('event_id', $eventId);
+        }
+
+        $results = $query
+            ->select('attendance_id', DB::raw('SUM(value) as total'))
+            ->groupBy('attendance_id')
+            ->orderByDesc('total')
+            ->get();
+
+        \Log::info("Pie Chart Request - Year: {$year}, Event ID: {$eventId}, Results: " . $results->count());
+
+        if ($results->isEmpty()) {
+            return response()->json([
+                'labels' => ['No Data'],
+                'values' => [1],
+                'years' => [$year],
+                'year' => (int)$year
+            ]);
+        }
+
+        $labels = [];
+        $values = [];
+
+        foreach ($results as $row) {
+            $attendanceId = $row->attendance_id;
+
+            if (in_array($attendanceId, ['regular', 'guest', 'volunteer'])) {
+                $labels[] = ucfirst($attendanceId);
+            } else {
+                try {
+                    $url = "check-ins/v2/attendance_types/{$attendanceId}";
+                    $response = $this->planningService->planning_api_call($url, 'get', '', [], false, $userToken);
+
+                    if ($response && isset($response->data->attributes->name)) {
+                        $labels[] = $response->data->attributes->name;
+                    } else {
+                        $labels[] = "Attendance {$attendanceId}";
+                    }
+                } catch (\Exception $e) {
+                    $labels[] = "Type {$attendanceId}";
+                }
+            }
+
+            $values[] = (int)$row->total;
+        }
+
         return response()->json([
-            'labels' => ['No Data'],
-            'values' => [1],
-            'years' => range(date('Y') - 5, date('Y'))
+            'labels' => $labels,
+            'values' => $values,
+            'years' => [$year],
+            'year' => (int)$year,
+            'event_id' => $eventId
         ]);
     }
 
-    $labels = [];
-    $values = [];
-    
-    foreach ($results as $row) {
-        $attendanceId = $row->attendance_id;
-        
-        if (in_array($attendanceId, ['regular', 'guest', 'volunteer'])) {
-            $labels[] = ucfirst($attendanceId);
-        } else {
-            // Make API call to get attendance type name
-            $url = "check-ins/v2/attendance_types/{$attendanceId}";
-            $response = $this->planningService->planning_api_call($url, 'get', '', [], false, $userToken);
-            
-            if ($response && isset($response->data->attributes->name)) {
-                $labels[] = $response->data->attributes->name;
-            } else {
-                $labels[] = "Type {$attendanceId}";
-            }
-        }
-        
-        $values[] = (int)$row->total;
-    }
-
-    $availableYears = DB::table('events_data')
-        ->selectRaw('YEAR(service_date) as year')
-        ->distinct()
-        ->orderByDesc('year')
-        ->pluck('year')
-        ->toArray();
-
-    return response()->json([
-        'labels' => $labels,
-        'values' => $values,
-        'years' => $availableYears,
-        'year' => (int)$year
-    ]);
-}
-
-
-    // public function getApexChartData(Request $request)
-    // {
-    //     $year = $request->input('year', date('Y'));
-    //     $months = $request->input('months');
-
-    //     $query = DB::table('events_data')
-    //         ->whereNotNull('service_name')
-    //         ->whereNotNull('value')
-    //         ->whereYear('service_date', $year);
-
-    //     if ($months && is_array($months)) {
-    //         $query->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
-    //     }
-
-    //     $data = $query->select(
-    //         'service_name as event',
-    //         DB::raw('MONTH(service_date) as month'),
-    //         DB::raw('SUM(value) as total')
-    //     )
-    //         ->groupBy('event', 'month')
-    //         ->orderBy('month')
-    //         ->get();
-
-    //     $monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-    //     $events = $data->pluck('event')->unique()->sort()->values();
-    //     $series = [];
-
-    //     foreach ($events as $event) {
-    //         $monthlyData = array_fill(0, 12, 0);
-    //         foreach ($data->where('event', $event) as $row) {
-    //             $monthlyData[$row->month - 1] = (int)$row->total;
-    //         }
-
-    //         if ($months && is_array($months)) {
-    //             $filtered = [];
-    //             foreach ($months as $m) {
-    //                 $filtered[] = $monthlyData[intval($m) - 1] ?? 0;
-    //             }
-    //             $monthlyData = $filtered;
-    //         }
-
-    //         $series[] = ['name' => $event, 'data' => $monthlyData];
-    //     }
-
-    //     $categories = ($months && is_array($months))
-    //         ? collect($months)->map(fn($m) => $monthNames[intval($m) - 1])->values()->toArray()
-    //         : $monthNames;
-
-    //     $availableYears = DB::table('events_data')
-    //         ->whereNotNull('service_date')
-    //         ->selectRaw('YEAR(service_date) as year')
-    //         ->distinct()
-    //         ->orderByDesc('year')
-    //         ->pluck('year')
-    //         ->toArray();
-
-    //     return response()->json([
-    //         'series' => $series,
-    //         'categories' => $categories,
-    //         'year' => (int)$year,
-    //         'available_years' => $availableYears
-    //     ]);
-    // }
 
 
 
@@ -240,21 +207,21 @@ class ChartController extends Controller
 
         $rows = $query
             ->selectRaw("DATE_FORMAT(service_date,'%b') as label")
-            ->selectRaw("service_name")  // ADD THIS - get event name from service_name column
+            ->selectRaw("service_name")
             ->selectRaw("SUM(value) as total")
-            ->groupBy(DB::raw("MONTH(service_date)"), 'service_name')  // Group by service_name instead of attendance_id
+            ->groupBy(DB::raw("MONTH(service_date)"), 'service_name')
             ->orderBy(DB::raw("MONTH(service_date)"))
             ->get();
 
         $labels = $rows->pluck('label')->unique()->values();
-        $events = $rows->pluck('service_name')->unique();  // Get unique event names
+        $events = $rows->pluck('service_name')->unique();
 
         $series = [];
         foreach ($events as $eventName) {
-            if (empty($eventName)) continue; // Skip if no event name
+            if (empty($eventName)) continue;
 
             $series[] = [
-                'name' => $eventName,  // Use event name directly
+                'name' => $eventName,
                 'data' => $labels->map(
                     fn($l) =>
                     (int)$rows->where('label', $l)
@@ -276,55 +243,184 @@ class ChartController extends Controller
     }
 
     public function getEventsChartData(Request $request)
-{
-    $year = $request->input('year', date('Y'));
-    $months = $request->input('months');
+    {
+        $year = $request->input('year', date('Y'));
+        $months = $request->input('months');
 
-    $query = DB::table('events_data')
-        ->whereYear('service_date', $year)
-        ->where('value', '>', 0)
-        ->whereNotNull('service_name');
+        $query = DB::table('events_data')
+            ->whereYear('service_date', $year)
+            ->where('value', '>', 0)
+            ->whereNotNull('service_name');
 
-    if ($months && is_array($months)) {
-        $query->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
-    }
-
-    $data = $query->select(
-        'service_name as event',
-        DB::raw('MONTH(service_date) as month'),
-        DB::raw('SUM(value) as total')
-    )
-        ->groupBy('event', 'month')
-        ->orderBy('month')
-        ->get();
-
-    $events = $data->pluck('event')->unique()->sort()->values();
-    $series = [];
-
-    foreach ($events as $event) {
-        $monthlyData = array_fill(0, 12, 0);
-        foreach ($data->where('event', $event) as $row) {
-            $monthlyData[$row->month - 1] = (int)$row->total;
+        if ($months && is_array($months)) {
+            $query->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
         }
 
-        $series[] = [
-            'name' => $event,
-            'data' => $monthlyData
-        ];
+        $data = $query->select(
+            'service_name as event',
+            DB::raw('MONTH(service_date) as month'),
+            DB::raw('SUM(value) as total')
+        )
+            ->groupBy('event', 'month')
+            ->orderBy('month')
+            ->get();
+
+        $events = $data->pluck('event')->unique()->sort()->values();
+        $series = [];
+
+        foreach ($events as $event) {
+            $monthlyData = array_fill(0, 12, 0);
+            foreach ($data->where('event', $event) as $row) {
+                $monthlyData[$row->month - 1] = (int)$row->total;
+            }
+
+            $series[] = [
+                'name' => $event,
+                'data' => $monthlyData
+            ];
+        }
+
+        $availableYears = DB::table('events_data')
+            ->whereNotNull('service_date')
+            ->selectRaw('YEAR(service_date) as year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->toArray();
+
+        return response()->json([
+            'series' => $series,
+            'available_years' => $availableYears,
+            'year' => (int)$year
+        ]);
     }
 
-    $availableYears = DB::table('events_data')
-        ->whereNotNull('service_date')
-        ->selectRaw('YEAR(service_date) as year')
-        ->distinct()
-        ->orderByDesc('year')
-        ->pluck('year')
-        ->toArray();
+    public function getGuestChartData(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        $months = $request->input('months', []);
 
-    return response()->json([
-        'series' => $series,
-        'available_years' => $availableYears,
-        'year' => (int)$year
-    ]);
-}
+    $monthNames = ["Jan","Feb","Mar","Apr", "May","Jun", "Jul","Aug", "Sep", "Oct", "Nov", "Dec"
+        ];
+
+        $userId = 883;
+        $token = CrmToken::where('user_id', $userId)
+            ->where('crm_type', 'planning')
+            ->first();
+
+        if (!$token) {
+            return response()->json([
+                'series' => [],
+                'categories' => $monthNames,
+                'available_years' => [$year],
+                'year' => (int)$year,
+                'attendance_type' => 'guest',
+                'message' => 'No token found'
+            ]);
+        }
+
+        $attendanceTypes = [];
+        try {
+            $url = "check-ins/v2/attendance_types?per_page=100";
+            $response = $this->planningService->planning_api_call($url, 'get', '', [], false, $token->access_token);
+
+            if ($response && isset($response->data)) {
+                foreach ($response->data as $item) {
+                    if (
+                        stripos($item->attributes->name, 'guest') !== false ||
+                        stripos($item->attributes->name, 'Guest') !== false
+                    ) {
+                        $attendanceTypes[] = $item->id;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $attendanceTypes = ['guest'];
+        }
+
+        if (empty($attendanceTypes)) {
+            $possibleGuestTypes = ['guest', '313370', '305030', '313327'];
+            $attendanceTypes = $possibleGuestTypes;
+        }
+
+        \Log::info('Guest attendance types found:', $attendanceTypes);
+
+        $query = DB::table('events_data')
+            ->whereYear('service_date', $year)
+            ->where('value', '>', 0)
+            ->whereNotNull('service_name');
+
+        $query->whereIn('attendance_id', $attendanceTypes);
+
+        if (!empty($months) && is_array($months)) {
+            $query->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
+        }
+
+        $data = $query->select(
+            'service_name as event',
+            DB::raw('MONTH(service_date) as month'),
+            DB::raw('SUM(value) as total')
+        )
+            ->groupBy('event', 'month')
+            ->orderBy('month')
+            ->get();
+
+
+        $events = $data->pluck('event')->unique()->sort()->values();
+
+        $series = [];
+        foreach ($events as $event) {
+            $monthlyData = array_fill(0, 12, 0);
+
+            foreach ($data->where('event', $event) as $row) {
+                $monthlyData[$row->month - 1] = (int)$row->total;
+            }
+
+            if (!empty($months)) {
+                $filteredData = [];
+                foreach ($months as $month) {
+                    $filteredData[] = $monthlyData[intval($month) - 1] ?? 0;
+                }
+                $monthlyData = $filteredData;
+            }
+
+            $hasData = array_sum($monthlyData) > 0;
+            if ($hasData) {
+                $series[] = [
+                    'name' => $event,
+                    'data' => $monthlyData
+                ];
+            }
+        }
+
+        $monthNames = ["Jan","Feb","Mar","Apr", "May","Jun", "Jul","Aug", "Sep", "Oct", "Nov", "Dec"
+        ];
+
+        $categories = $monthNames;
+        if (!empty($months)) {
+            $categories = collect($months)
+                ->sort()
+                ->map(fn($m) => $monthNames[$m - 1] ?? '')
+                ->filter()
+                ->values()
+                ->toArray();
+        }
+
+        $availableYears = DB::table('events_data')
+            ->selectRaw('YEAR(service_date) as year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->toArray();
+
+        return response()->json([
+            'series' => $series,
+            'categories' => $categories,
+            'available_years' => $availableYears,
+            'year' => (int)$year,
+            'attendance_type' => 'guest',
+            'guest_types_found' => $attendanceTypes,
+            'total_events' => count($series)
+        ]);
+    }
 }

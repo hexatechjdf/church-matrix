@@ -244,7 +244,7 @@
     <div id="loadingg">
         <img id="loading-image" src="{{ asset('assets/images/Blinking squares.gif') }}" alt="Loading..." />
     </div>
-    <div id="remove-overlay" class="loading-overlay"></div>
+    {{-- <div id="remove-overlay" class="loading-overlay"></div> --}}
 
 
     <!-- Top Bar End -->

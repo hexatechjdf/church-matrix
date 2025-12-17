@@ -53,13 +53,10 @@
     </style>
 @endpush
 @section('content')
-    <div id="loadingg" class="loadingg d-none">
-        <img id="loading-image" src="{{ asset('load.svg') }}" alt="Loading..." />
-    </div>
-    <div id="remove-overlay" class="loading-overlay"></div>
+
 
     @include('locations.components.topbar')
-    <div class="p-4 bg-white">
+    <div class="p-4 ">
         <div class="row">
             <div class="col-md-4 py-2">
                 <div class="card">

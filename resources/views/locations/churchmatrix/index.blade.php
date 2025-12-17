@@ -4,7 +4,7 @@
 
 
 @section('content')
-    @php($is_show = $user->role == 0 || $user->campus ? true : false)
+    @php($is_show = true)
     <div class="settings-container">
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div>
