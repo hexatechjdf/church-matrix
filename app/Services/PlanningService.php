@@ -17,98 +17,105 @@ class PlanningService
         $type = 'planning_access_token';
         $baseurl = $this->base;
 
-        $user_id  = request()->user_id ?? 883;
+        $user_id = request()->user_id ?? 883;
         $user = loginUser($user_id);
 
         $crm = $crm ?? $user->planningToken;
-        //  dd($crm);
 
         if (is_null($a_token)) {
             $bearer = $crm->access_token;
         } else {
-            $bearer =  $a_token;
+            $bearer = $a_token;
         }
 
         if (empty($bearer)) {
-            return '';
+            // Return empty object instead of empty string
+            return (object) ['data' => [], 'included' => [], 'meta' => []];
         }
 
         $location = @$user->crmtoken->location_id;
         request()->location_id = $location;
         $headers['Authorization'] = 'Bearer ' . $bearer;
         $headers['Content-Type'] = "application/json";
-        $client = new \GuzzleHttp\Client(['http_errors' => false, 'headers' => $headers]);
 
-        $options = [];
-        if (!empty($data) && $method != 'get') {
-            $options['body'] = $data;
-        }
-        $url1 = $baseurl . $url;
+        try {
+            $client = new \GuzzleHttp\Client([
+                'http_errors' => false,
+                'headers' => $headers,
+                'timeout' => 30, // Add timeout
+                'connect_timeout' => 10,
+            ]);
 
+            $options = [];
+            if (!empty($data) && $method != 'get') {
+                $options['body'] = $data;
+            }
 
-        $response = $client->request($method, $url1, $options);
-        $bd = $response->getBody()->getContents();
-        $isaccessdenied = false;
-        if (strpos($bd, 'HTTP Basic: Access denied') !== false) {
-            $isaccessdenied = true;
-        }
+            $url1 = $baseurl . $url;
+            $response = $client->request($method, $url1, $options);
+            $bd = $response->getBody()->getContents();
 
-        $bd = json_decode($bd);
+            // Check for access denied
+            if (strpos($bd, 'HTTP Basic: Access denied') !== false) {
+                return (object) ['data' => [], 'included' => [], 'meta' => []];
+            }
 
-        if (($bd && property_exists($bd, 'errors') && is_array($bd->errors) && count($bd->errors) > 0 && property_exists($bd->errors[0], 'code') && strtolower($bd->errors[0]->code) == 'unauthorized') || $isaccessdenied) {
-            $refresh_token = $crm->refresh_token;
-            // dd($bd);
+            $bd = json_decode($bd);
 
-            $lck = Cache::lock('planning_cache_lock_' . $user_id, 40);
-            $is_refresh = false;
-            try {
-                list($is_refresh, $a_token) = $lck->block(40, function () use ($user_id, $refresh_token, $crm) {
-                    // $newrefresh_token = $crm->refresh_token;
-                    // if($newrefresh_token==''){
-                    //     return [false,''];
-                    // }
-                    // if($refresh_token!=$refresh_token){
-                    //     return [true,''];
-                    // }
+            // Handle unauthorized errors
+            if ($bd && property_exists($bd, 'errors') && is_array($bd->errors) && count($bd->errors) > 0) {
+                foreach ($bd->errors as $error) {
+                    if (property_exists($error, 'code') && strtolower($error->code) == 'unauthorized') {
+                        $refresh_token = $crm->refresh_token;
 
-                    $payload = [];
-                    $code = $this->get_planning_token($refresh_token, 'refresh_token');
-                    // dd($code);
-                    if ($code && property_exists($code, 'access_token')) {
-                        $payload = [
-                            'access_token' => $code->access_token,
-                            'refresh_token' => $code->refresh_token,
-                        ];
-                        $this->saveToken($user_id, $payload);
-                        return [true, $code->access_token];
+                        $lck = Cache::lock('planning_cache_lock_' . $user_id, 40);
+                        $is_refresh = false;
+                        $new_token = null;
+
+                        try {
+                            list($is_refresh, $new_token) = $lck->block(40, function () use ($user_id, $refresh_token, $crm) {
+                                $code = $this->get_planning_token($refresh_token, 'refresh_token');
+
+                                if ($code && property_exists($code, 'access_token')) {
+                                    $payload = [
+                                        'access_token' => $code->access_token,
+                                        'refresh_token' => $code->refresh_token,
+                                    ];
+                                    $this->saveToken($user_id, $payload);
+                                    return [true, $code->access_token];
+                                }
+
+                                if (
+                                    $code && property_exists($code, 'error_description') &&
+                                    $code->error_description == 'The refresh token is no longer valid'
+                                ) {
+                                    $payload = [
+                                        'access_token' => null,
+                                        'refresh_token' => null,
+                                    ];
+                                    $this->saveToken($user_id, $payload);
+                                }
+                                return [false, null];
+                            });
+                        } catch (\Exception $e) {
+                            \Log::error('Token refresh failed: ' . $e->getMessage());
+                        }
+
+                        if ($is_refresh && $new_token) {
+                            return $this->planning_api_call($url, $method, $data, $headers, $json, $new_token);
+                        }
+
+                        return (object) ['data' => [], 'included' => [], 'meta' => []];
                     }
-                    if ($code && property_exists($code, 'error_description') && $code->error_description == 'The refresh token is no longer valid') {
-                        $payload = [
-                            'access_token' => $user_id,
-                            'refresh_token' => $user_id,
-                            'company_id' => $user_id,
-                            'organization_name' => $user_id,
-                        ];
-                        $this->saveToken($user_id, $payload);
-                    }
-                    return [false, ''];
-                });
-            } catch (\Exception $e) {
+                }
             }
 
-            if ($is_refresh) {
-                return $this->planning_api_call($url, $method, $data, $headers, $json, $a_token);
-            }
-
-            if (session('is_login_res')) {
-                $res = session('is_login_res');
-                session()->forget('is_login_res');
-                response()->json($res)->send();
-                die();
-            }
-            return '';
+            // Ensure we always return an object
+            return $bd ?: (object) ['data' => [], 'included' => [], 'meta' => []];
+        } catch (\Exception $e) {
+            \Log::error('Planning API call failed: ' . $e->getMessage());
+            return (object) ['data' => [], 'included' => [], 'meta' => []];
         }
-        return $bd;
     }
 
     public function saveToken($user_id, $data)

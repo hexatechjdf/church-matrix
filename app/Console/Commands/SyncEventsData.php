@@ -114,7 +114,6 @@ class SyncEventsData extends Command
         $this->info("Syncing User: {$userId} | Location: {$locationId}");
 
         do {
-
             if ($type == 'headcount') {
                 $filter = [];
                 $createdat = $options['created'] ?? "";
@@ -131,16 +130,17 @@ class SyncEventsData extends Command
                 $response = $this->fetchAttendances($offset, $crm->access_token, $filter);
             } else {
                 $response = $this->fetchEventTimes($offset, $crm->access_token);
-               
             }
 
-
-            if (empty($response->data)) {
+            // Check if response is valid
+            if (empty($response) || !is_object($response) || empty($response->data)) {
+                $this->warn("No data received for offset {$offset}");
                 break;
             }
 
+            // Ensure included exists
             $includedMap = $this->buildIncludedMap($response->included ?? []);
-            // dd($includedMap);
+
             $events = $this->processEventBatch($response->data, $userId, $locationId, $includedMap, $type);
 
             $batch = array_merge($batch, $events);
@@ -152,7 +152,10 @@ class SyncEventsData extends Command
             }
 
             $offset += self::PER_PAGE;
-        } while (!empty($response->links->next));
+
+            // Check if there's next page
+            $hasNextPage = !empty($response->links->next) && count($response->data) >= self::PER_PAGE;
+        } while ($hasNextPage);
 
         if (!empty($batch)) {
             $this->upsertBatch($batch);
@@ -162,17 +165,37 @@ class SyncEventsData extends Command
         $this->info("User {$userId} → {$syncedCount} services synced!");
         return $syncedCount;
     }
-
     private function fetchEventTimes(int $offset, string $token): object
     {
         $url = "check-ins/v2/event_times?include=event,headcounts&per_page=" . self::PER_PAGE . "&offset={$offset}";
 
-        return $this->planningService->planning_api_call($url, 'get', '', [], false, $token);
+        $response = $this->planningService->planning_api_call($url, 'get', '', [], false, $token);
+
+        // FIX: Always return object
+        if (empty($response) || !is_object($response)) {
+            $this->warn("API returned non-object response for offset {$offset}");
+            return (object) [
+                'data' => [],
+                'included' => [],
+                'links' => (object) ['next' => null],
+                'meta' => (object) []
+            ];
+        }
+
+        return $response;
     }
 
     private function fetchAttendances(int $offset, string $token, $filter): object
     {
-        return $this->planningService->getHeadcounts($offset, $token, $filter);
+        $response = $this->planningService->getHeadcounts($offset, $token, $filter);
+
+        // Ensure it's always an object
+        if (is_string($response)) {
+            Log::warning('getHeadcounts returned string instead of object', ['response' => $response]);
+            return (object) ['data' => [], 'included' => [], 'links' => (object) [], 'meta' => (object) []];
+        }
+
+        return $response;
     }
 
     private function buildIncludedMap(array $included): Collection
@@ -232,7 +255,7 @@ class SyncEventsData extends Command
                 ];
 
                 foreach ($values as $v => $total) {
-                    
+
                     $record = [
                         'attendance_id' => $v,
                         'value' => $total,
@@ -267,7 +290,7 @@ class SyncEventsData extends Command
                         'volunteer' => $attrib->volunteer_count ?? 0,
                     ];
                     foreach ($values as $v => $total) {
-                        
+
                         $item->key = $v;
                         $item->total = $total;
                         $data[] = $this->buildEventData($item, $eventId, $eventName, $userId, $locationId, null, $startsAt);
@@ -278,7 +301,7 @@ class SyncEventsData extends Command
 
 
 
-       
+
         return $data;
     }
     private function mergeDateFields($data, Carbon $startsAt)
@@ -341,7 +364,7 @@ class SyncEventsData extends Command
                 ]
             );
 
-            EventsData::where('value',0)->delete();
+            EventsData::where('value', 0)->delete();
         });
     }
 }

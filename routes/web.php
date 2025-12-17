@@ -214,12 +214,13 @@ Route::prefix('locations')->name('locations.')->group(function () {
 
         Route::get('/headcounts/visualization', [$c, 'headCountGraphs'])->name('headcount.visuals');
 
-        // ADD THESE NEW ROUTES FOR CHARTS
+        // Chart routes
         Route::get('/event-filter', [ChartController::class, 'index'])->name('event.filter');
         Route::get('/get-chart-json', [ChartController::class, 'getChartJson'])->name('chart.json');
         Route::get('/get-pie-chart-data', [ChartController::class, 'getPieChartData'])->name('pie.chart.data');
         Route::get('/get-events-chart-data', [ChartController::class, 'getEventsChartData'])->name('events.chart.data');
         Route::get('/get-line-chart-data', [ChartController::class, 'getLineChartData'])->name('line.chart.data');
+         Route::get('/get-guest-chart-data', [ChartController::class, 'getGuestChartData'])->name('guest.chart.data');
     });
 });
 
