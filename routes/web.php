@@ -182,6 +182,8 @@ Route::prefix('locations')->name('locations.')->group(function () {
     Route::prefix('churchmatrix')->name('churchmatrix.')->group(function () {
         $controller = IndexController::class;
         Route::get('/', [$controller, 'index'])->name('index');
+        Route::get('/user-campus-form', [$controller, 'getUserCampusForm'])->name('getUserCampusForm');
+        Route::post('/save-user-campus', [$controller, 'saveUserCampusAjax'])->name('saveUserCampusAjax')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
         Route::prefix('setting-intergration')->name('setting-intergration.')->group(function () {
             Route::get('/', [SettingIntergration::class, 'index'])->name('index');

@@ -169,7 +169,7 @@
 
                     <div class="d-flex ">
                         <button type="button" class="refresh-btn btn btn-warning mr-3"
-                            data-url="{{ route('locations.churchmatrix.integration.update.times') }}" title="Refresh">
+                            data-url="{{ route('locations.churchmatrix.integration.update.records') }}" title="Refresh">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                         <a class=" btn btn-primary" href="{{ route('locations.churchmatrix.integration.stats.index') }}"

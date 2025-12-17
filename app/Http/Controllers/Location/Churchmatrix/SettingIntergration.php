@@ -12,6 +12,7 @@ use App\Services\ChurchService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use App\Jobs\churchmatrix\ServiceTimeJob;
+use App\Jobs\churchmatrix\GetCampusesJob;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use App\Models\ServiceTime;
@@ -206,5 +207,28 @@ class SettingIntergration extends Controller
 
 
         return view('locations.churchmatrix.setting-integration.index', compact('campuses'));
+    }
+
+    public function updateTimes(Request $request)
+    {
+       $user = loginUser();
+       $t = !$user->church_admin || $user->role == 0 ? true : false;
+
+       dispatch(new ServiceTimeJob($user->id, $t));
+
+       return resposne()->json(['success' => true]);
+    }
+
+    public function updateRecords(Request $request)
+    {
+        $user = loginUser();
+        $campus_id = $this->churchService->getUserCampusId($request,$user) ?? null;
+        $token = getChurchToken(null,$user->id);
+
+        $type = $user->role == 0 ? 'parent' : 'child';
+
+        dispatch(new GetCampusesJob($token, $campus_id,$type));
+
+        return resposne()->json(['success' => true]);
     }
 }

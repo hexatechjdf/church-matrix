@@ -77,18 +77,38 @@ class ManageServiceTimeJob implements ShouldQueue
 
     public function saveRecords($final)
     {
-        $existingIds = DB::table('service_times')
-            ->whereIn('cm_id', array_column($final, 'cm_id'))
-            ->pluck('cm_id')
-            ->toArray();
+        DB::table('service_times')->upsert(
+            $final,
+            ['cm_id'],
+            [
+                'day_of_week',
+                'complete_time',
+                'time_of_day',
+                'timezone',
+                'relation_to_sunday',
+                'date_start',
+                'date_end',
+                'replaces',
+                'event_id',
+                'event_name',
+                'campus_name',
+                'campus_id',
+                'updated_at'
+            ]
+        );
 
-        $toInsert = array_filter($final, function ($record) use ($existingIds) {
-            return !in_array($record['cm_id'], $existingIds);
-        });
+        // $existingIds = DB::table('service_times')
+        //     ->whereIn('cm_id', array_column($final, 'cm_id'))
+        //     ->pluck('cm_id')
+        //     ->toArray();
 
-        if (!empty($toInsert)) {
-            DB::table('service_times')->insert($toInsert);
-        }
+        // $toInsert = array_filter($final, function ($record) use ($existingIds) {
+        //     return !in_array($record['cm_id'], $existingIds);
+        // });
+
+        // if (!empty($toInsert)) {
+        //     DB::table('service_times')->insert($toInsert);
+        // }
 
     }
 }

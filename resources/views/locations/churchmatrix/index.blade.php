@@ -3,102 +3,81 @@
 @section('title', 'Settings')
 
 
-
 @section('content')
-<div class="settings-container">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="h3 mb-0">Settings</h1>
-            <p class="text-muted mb-0">Configure your account preferences and integrations</p>
-        </div>
-        <div> @include('button.index') </div>
-    </div>
-
-    <!-- Timezone Settings -->
-
-
-     @include('components.church-matrix-keys')
-    <!-- API Configuration -->
-    {{-- <div id="admin-section">
-        <div class="row">
-            <!-- Church Matrix API -->
-            <div class="col-lg-6">
-                <form action="#">
-                    <div class="card-modern">
-                        <div class="card-header-modern info">
-                            <h5>Church Matrix API</h5>
-                        </div>
-                        <div class="card-body-modern">
-                            <div class="form-group">
-                                <label class="form-label">
-                                    User Auth (Email) <span class="required">*</span>
-                                </label>
-                                <input type="email" name="church_matrix_user" class="form-control-modern"
-                                    placeholder="your-email@example.com" value="" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">
-                                    Church Matrix API Key <span class="required">*</span>
-                                </label>
-                                <input type="text" name="church_matrix_api" class="form-control-modern"
-                                    placeholder="Enter your API key" value="" required>
-                                <div class="helper-text">
-                                    <span>Your API key is encrypted and stored securely</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer-modern">
-                            <button type="submit" class="btn-modern btn-info">
-                                <span>Save API Credentials</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
+    @php($is_show = $user->role == 0 || $user->campus ? true : false)
+    <div class="settings-container">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="h3 mb-0">Settings</h1>
+                <p class="text-muted mb-0">Configure your account preferences and integrations</p>
             </div>
+            <div> @include('button.index', ['churchmatrixbtn' => $is_show]) </div>
+        </div>
 
-            <!-- Region Selection -->
-            <div class="col-lg-6">
-                <div class="card-modern">
-                    <div class="card-header-modern success">
-                        <h5>Region Selection</h5>
-                    </div>
-
-                    <div class="card-body-modern">
-                        <div class="alert-modern">
-                            <div class="content">
-                                <strong>Important</strong>
-                                Please save your Church Matrix API credentials first before selecting a region.
-                            </div>
+        @if ($is_show)
+            @include('components.church-matrix-keys')
+            @if ($user->role == 0)
+                <div class="col-lg-12">
+                    <div class="card-modern">
+                        <div class="card-header-modern warning  bg-warning">
+                            <h5>Mappings</h5>
                         </div>
+                        <div class="card-body-modern" id="user-campus-form-wrapper">
 
-                        <form action="#">
-                            <div class="form-group">
-                                <label class="form-label">
-                                    Select Region <span class="required">*</span>
-                                </label>
-                                <select class="form-control-modern" name="region_id" id="region_id" disabled>
-                                    <option value="">-- Choose Region --</option>
-                                </select>
-                                <div class="helper-text">
-                                    <span>This determines your data center location</span>
-                                </div>
-                            </div>
-                    </div>
 
-                    <div class="card-footer-modern">
-                        <button type="submit" class="btn-modern btn-success" disabled>
-                            <span>Save Region</span>
-                        </button>
+                        </div>
                     </div>
-                    </form>
+                </div>
+            @endif
+        @else
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <div>
+                    <strong>Access Restricted</strong><br>
+                    No campus has been added to your location.
+                    Please contact your admin.
                 </div>
             </div>
-        </div>
-    </div> --}}
-</div>
+        @endif
+
+    </div>
 @endsection
 
 @push('script')
-@include('components.submit-form')
+    @include('components.submit-form')
+    <script>
+        // $(document).ready(function() {
+        //         @if ($user->role == 0)
+        //             function getForm() {
+        //                 $.get('{{ route('locations.churchmatrix.getUserCampusForm') }}', function(html) {
+        //                     $('#user-campus-form-wrapper').html(html);
+        //                 });
+        //             }
+
+        //             getForm();
+
+        //             $(document).on('click', '.save-user-campus', function(e) {
+        //                 e.preventDefault();
+        //                 let $row = $(this).closest('tr');
+        //                 let user_id = $row.data('user-id');
+        //                 let campus_id = $row.find('.campus-select').val();
+
+        //                 if (!campus_id) {
+        //                     alert('Please select a campus.');
+        //                     return;
+        //                 }
+
+        //                 $.post('{{ route('locations.churchmatrix.saveUserCampusAjax') }}', {
+        //                     user_id: user_id,
+        //                     campus_id: campus_id
+        //                 }, function(res) {
+        //                     if (res.success) {
+        //                         alert(res.message);
+        //                     }
+        //                 });
+        //             });
+
+        //         });
+        // @endif
+    </script>
 @endpush

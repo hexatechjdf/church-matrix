@@ -32,7 +32,7 @@
                     automatRegions(response.regions);
                 }
 
-                if(data_table) {
+                if (data_table) {
                     $(`#${data_table}`).DataTable().ajax.reload();
                 }
             },
@@ -85,7 +85,7 @@
         let submitBtn = $(this);
         let originalText = $(this).text();
         let funcName = $(this).data('function');
-        let data_table =  $(this).data('table');
+        let data_table = $(this).data('table');
 
         Swal.fire({
             title: "Are you sure?",
@@ -109,7 +109,7 @@
                             window[funcName]();
                         }
 
-                        if(data_table) {
+                        if (data_table) {
                             $(`#${data_table}`).DataTable().ajax.reload();
                         }
                     },
@@ -125,5 +125,59 @@
 
         });
 
+    });
+</script>
+
+<script>
+    $(document).on('click', '.refresh-btn', function() {
+        const url = $(this).data('url');
+        if (!url) {
+            console.error('Refresh URL missing');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to refresh the data?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Refresh',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d'
+        }).then((result) => {
+
+            if (!result.value) return;
+
+            Swal.fire({
+                title: 'Refreshing...',
+                text: 'Please wait while data is being refreshed',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(res) {
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Refreshed!',
+                        text: res.message ?? 'Request has been  sent it will take time..'
+                    });
+                },
+                error: function(xhr) {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: xhr.responseJSON?.message ?? 'Something went wrong'
+                    });
+                }
+            });
+        });
     });
 </script>

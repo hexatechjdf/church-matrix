@@ -96,7 +96,7 @@ class ChurchService
 
     public function fetchRegions($crm = null)
     {
-        return Cache::remember('regions', 600, function () use ($t) {
+        return Cache::remember('regions', 600, function () use ($crm) {
             return $this->request('GET', 'regions.json', [], false, $crm);
         });
 

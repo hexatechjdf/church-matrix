@@ -313,6 +313,11 @@
 <body>
     <div class="container-fluid px-4 py-4">
         <div class="row">
+            <div class="col-md-12 mb-3">
+                <a class="btn btn-secondary" href="{{ route('locations.churchmatrix.integration.records.index') }}">
+                    <i class="fa-solid fa-arrow-left me-2"></i> Back
+                </a>
+            </div>
             <div class="col-md-12">
                 <div class="chart-card">
                     <div class="chart-header">

@@ -45,7 +45,7 @@ class ManageCampusJob implements ShouldQueue
             return;
         }
 
-        $c = Campus::where('user_id',$current_user->id)->first();
+        $c = Campus::where('location_id',$current_user->location)->first();
         if(!$c)
         {
             $crm  = \getChurchToken(null,$current_user->id);
@@ -53,8 +53,8 @@ class ManageCampusJob implements ShouldQueue
             $timezone = $current_user->timezone ?? 'London';
             $region = @$crm->company_id ?? '8928';
             $data = [
-                "slug" => $current_user->email,
-                "description" => $current_user->email,
+                "slug" => $current_user->location,
+                "description" => $current_user->location,
                 "timezone" => $timezone,
                 "active" => true,
                 "region_id" => $region,
