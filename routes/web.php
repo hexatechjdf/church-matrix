@@ -314,7 +314,7 @@ Route::get('/get-attendance-type', function (PlanningService $service) {
 
     $request = new Request();
     $request->merge([
-        'user_id' => 884,
+      'user_id' => 884,
     ]);
     $w = $service->planning_api_call('check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-11-28', 'get', '', [], false, $planning);
 

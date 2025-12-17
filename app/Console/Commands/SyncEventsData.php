@@ -131,7 +131,7 @@ class SyncEventsData extends Command
                 $response = $this->fetchAttendances($offset, $crm->access_token, $filter);
             } else {
                 $response = $this->fetchEventTimes($offset, $crm->access_token);
-               
+
             }
 
 
@@ -232,7 +232,7 @@ class SyncEventsData extends Command
                 ];
 
                 foreach ($values as $v => $total) {
-                    
+
                     $record = [
                         'attendance_id' => $v,
                         'value' => $total,
@@ -267,7 +267,7 @@ class SyncEventsData extends Command
                         'volunteer' => $attrib->volunteer_count ?? 0,
                     ];
                     foreach ($values as $v => $total) {
-                        
+
                         $item->key = $v;
                         $item->total = $total;
                         $data[] = $this->buildEventData($item, $eventId, $eventName, $userId, $locationId, null, $startsAt);
@@ -278,7 +278,7 @@ class SyncEventsData extends Command
 
 
 
-       
+
         return $data;
     }
     private function mergeDateFields($data, Carbon $startsAt)
@@ -301,15 +301,17 @@ class SyncEventsData extends Command
             'event_id'      => $eventId,
             'event_name'    => $eventName,
             'service_name'  => $item->attributes->name ?? $eventName,
-
-            'attendance_id' => $headcount ? ($headcount->relationships->attendance_type->data->id ?? null) : $item->key,
-            'value'         => $headcount ? ($headcount->attributes->total ?? 0) : $item->total,
+            'week_reference' => $item->attributes->week_reference ?? null,
+            'service_date'  => $startsAt->toDateString(),
+            'service_time'  => $startsAt->format('H:i:s'),
+            'attendance_id' => $headcount->relationships->attendance_type->data->id ?? null,
+            'value'         => $headcount->attributes->total ?? 0,
             'headcount_type' => $headcount ? 'manual' : null,
-            'headcount_created_at' => ($createdAt)
-                ? Carbon::parse($createdAt)->format('Y-m-d H:i:s')
+            'headcount_created_at' => $headcount->attributes->created_at ?? null
+                ? Carbon::parse($headcount->attributes->created_at)->format('Y-m-d H:i:s')
                 : null,
-            'headcount_updated_at' => ($updatedAt ?? null)
-                ? Carbon::parse($updatedAt)->format('Y-m-d H:i:s')
+            'headcount_updated_at' => $headcount->attributes->updated_at ?? null
+                ? Carbon::parse($headcount->attributes->updated_at)->format('Y-m-d H:i:s')
                 : null,
             'location_id'   => $locationId,
             'synced_at'     => now(),

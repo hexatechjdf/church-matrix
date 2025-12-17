@@ -177,16 +177,16 @@ class PlanningService
     public function getHeadcounts($offset, $token = null,$filter = null)
     {
         $url = "check-ins/v2/headcounts?include=attendance_type,event_time,event&per_page=1000&offset=".$offset;
-       
+
         $query = [];
         if($filter){
 
             foreach($filter as $key=>$value){
                 $query['where'.$key] = $value;
             }
-            
+
         }
-        
+
 
         if (!empty($query)) {
             $url .= "&" . http_build_query($query);
