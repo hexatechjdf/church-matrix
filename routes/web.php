@@ -332,12 +332,12 @@ Route::get('/get-head-counts', function (PlanningService $service) {
 });
 
 Route::get('/get-attendance-type', function (PlanningService $service) {
-    $t = CrmToken::where('id', 9)->first();
+    $t = CrmToken::where('id', 5)->first();
     $planning = @$t->access_token;
 
     $request = new Request();
     $request->merge([
-        'user_id' => 883,
+      'user_id' => 884,
     ]);
     $w = $service->planning_api_call('check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-11-28', 'get', '', [], false, $planning);
 
@@ -346,5 +346,4 @@ Route::get('/get-attendance-type', function (PlanningService $service) {
 
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-12-01
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[updated_at]=2025-12-01
-
 

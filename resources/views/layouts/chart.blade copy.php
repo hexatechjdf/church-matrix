@@ -2,68 +2,62 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Planning Center • Full Analytics Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" />
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
-      min-height: 100vh;
-      padding: 30px 20px;
-      color: #1e293b;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Church Metric Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #858794 0%, #7f7e80 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+            color: #333;
+        }
 
-    .header h1 {
-      font-size: 2.8rem;
-      font-weight: 800;
-      background: linear-gradient(90deg, #4f46e5, #7c3aed);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
+        .dashboard {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
 
-    .card {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(16px);
-      border-radius: 20px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
-      padding: 28px;
-      margin-bottom: 40px;
-      border: 1px solid rgba(139, 92, 246, 0.1);
-    }
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
 
-    .chart-title {
-      text-align: center;
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #4c1d95;
-    }
+        .filter-group {
+            position: relative;
+        }
 
-    .reset-btn {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white;
-      border: none;
-      font-weight: 600;
-      height: 52px;
-      border-radius: 14px;
-    }
+        .filter-group select {
+            width: 100%;
+            padding: 14px 40px 14px 16px;
+            border: none;
+            border-radius: 12px;
+            background: white;
+            font-size: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            appearance: none;
+            cursor: pointer;
+        }
 
-    .reset-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
-    }
+        .filter-group i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            pointer-events: none;
+        }
 
         .week-picker {
             position: relative;
@@ -235,41 +229,37 @@
         }
     </style>
 </head>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/billboard.js/dist/billboard.min.css">
-<body>
-    @yield('content')
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="https://cdn.jsdelivr.net/npm/billboard.js/dist/billboard.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
 
-    <script>
+<body>
+@yield('content')
+  <script>
         let currentDate = new Date();
-        // const chartCtx = document.getElementById('myChart').getContext('2d');
-        // const chart = new Chart(chartCtx, {
-        //     type: 'bar',
-        //     data: {
-        //         labels: [],
-        //         datasets: []
-        //     },
-        //     options: {
-        //         responsive: true,
-        //         maintainAspectRatio: false,
-        //         plugins: {
-        //             legend: {
-        //                 position: 'top'
-        //             },
-        //             tooltip: {
-        //                 mode: 'index',
-        //                 intersect: false
-        //             }
-        //         },
-        //         scales: {
-        //             y: {
-        //                 beginAtZero: true
-        //             }
-        //         }
-        //     }
-        // });
+        const chartCtx = document.getElementById('myChart').getContext('2d');
+        const chart = new Chart(chartCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
 
         function getWeekStart(d) {
             const date = new Date(d);
@@ -304,88 +294,10 @@
 
             const res = await fetch(`/charts/data?${params}`);
             const result = await res.json();
-            const allValues = _(result.json)
-                .groupBy("month_year")
-                .map((items, month) => {
-                    const base = {
-                        month_year: month,
-                        first_created_date: items[0].first_created_date
-                    };
 
-                    // Add dynamic keys
-                    items.forEach(i => {
-                        base[i.attendance_id] = i.attendance_count;
-                    });
-
-                    return base;
-                })
-                .value();
-
-            console.log(result);
-            const chart = bb.generate({
-                size: {},
-                data: {
-
-                    json: allValues,
-                    keys: {
-                        x: result.keys.name,
-                        value: result.keys.values
-                    },
-                    groups: [
-                        result.keys.values
-                    ],
-                    type: "bar" // smooth line
-
-                },
-                tooltip: {
-                    contents: function(data, defaultTitleFormat, defaultValueFormat, color) {
-
-                        console.log(data);
-                        // find original json row
-                        data = data.filter(t => t.value != null);
-
-                        let row = chart.config().data.json[data[0].x][result.keys.name];
-
-                        const total = data.reduce((sum, val) => sum + val.value, 0);
-                        let html = `<table class="bb-tooltip"><tbody>`;
-                        html += `<tr><th colspan="2">${row}</th></tr>`;
-
-                        // Show normal dataset values
-                        data.forEach(d => {
-                            html += `
-          <tr>
-            <td style="color:${color(d)}">${d.id}</td>
-            <td>${d.value}</td>
-          </tr>
-        `;
-                        });
-
-                        // Add custom TOTAL row
-                        html += `
-        <tr style="font-weight:bold;">
-          <td>Total</td>
-          <td>${total}</td>
-        </tr>
-      `;
-
-                        html += `</tbody></table>`;
-                        return html;
-                    }
-                },
-                axis: {
-                    x: {
-                        type: "category"
-                    }
-                },
-                point: {
-                    r: 4 // size of points
-                },
-                bindto: "#chart"
-            });
-
-            // chart.data.labels = result.labels;
-            // chart.data.datasets = result.datasets;
-            // chart.update();
+            chart.data.labels = result.labels;
+            chart.data.datasets = result.datasets;
+            chart.update();
         }
 
         function renderCalendar() {
@@ -454,8 +366,9 @@
         document.getElementById('eventFilter').addEventListener('change', loadChartData);
 
         // Initial render
-
+        updateWeekDisplay();
         loadChartData();
+        
     </script>
 
 </body>

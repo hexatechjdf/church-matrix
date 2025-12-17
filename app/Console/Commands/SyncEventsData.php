@@ -7,7 +7,6 @@ use App\Services\PlanningService;
 use App\Models\CrmToken;
 use App\Models\EventsData;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +17,7 @@ class SyncEventsData extends Command
 
     protected $signature = 'events_data:sync
     {--user= : Sync for a specific user ID}
-    {--location= : Sync for a specific location ID} {--created=} {--updated=} {--all} {--location=} {--offset=}';
+    {--location= : Sync for a specific location ID}';
 
     protected $description = '';
 
@@ -33,9 +32,8 @@ class SyncEventsData extends Command
 
     public function handle(): int
     {
-
-
         $tokens = $this->getTokensQuery();
+
         if ($tokens->isEmpty()) {
             $this->error('No Planning Center connection found!');
             return Command::FAILURE;
@@ -50,7 +48,7 @@ class SyncEventsData extends Command
             }
 
             try {
-                $synced = $this->syncUserEvents($crm, $this->options());
+                $synced = $this->syncUserEvents($crm);
                 $this->totalSynced += $synced;
             } catch (\Exception $e) {
                 $this->error("Failed for User {$crm->user_id}: {$e->getMessage()}");
@@ -85,13 +83,6 @@ class SyncEventsData extends Command
         return $query->get();
     }
 
-    private function getWeekReference(Carbon $date): string
-    {
-        return $date->format('o-W');
-    }
-
-
-
     private function validateToken(CrmToken $crm): bool
     {
         if (!$crm->access_token || !$crm->user_id) {
@@ -102,13 +93,12 @@ class SyncEventsData extends Command
         return true;
     }
 
-    private function syncUserEvents(CrmToken $crm, $options = []): int
+    private function syncUserEvents(CrmToken $crm): int
     {
         $userId = $crm->user_id;
         $locationId = $crm->location_id ?? 'unknown';
         $syncedCount = 0;
-        $offset = $options['offset'] ?? 0;
-        $type = $options['type'] ?? '';
+        $offset = 0;
         $batch = [];
 
         $this->info("Syncing User: {$userId} | Location: {$locationId}");
@@ -140,8 +130,7 @@ class SyncEventsData extends Command
             }
 
             $includedMap = $this->buildIncludedMap($response->included ?? []);
-            // dd($includedMap);
-            $events = $this->processEventBatch($response->data, $userId, $locationId, $includedMap, $type);
+            $events = $this->processEventBatch($response->data, $userId, $locationId, $includedMap);
 
             $batch = array_merge($batch, $events);
 
@@ -166,135 +155,46 @@ class SyncEventsData extends Command
     private function fetchEventTimes(int $offset, string $token): object
     {
         $url = "check-ins/v2/event_times?include=event,headcounts&per_page=" . self::PER_PAGE . "&offset={$offset}";
-
         return $this->planningService->planning_api_call($url, 'get', '', [], false, $token);
     }
 
-    private function fetchAttendances(int $offset, string $token, $filter): object
+    private function buildIncludedMap(array $included): array
     {
-        return $this->planningService->getHeadcounts($offset, $token, $filter);
+        $map = [];
+        foreach ($included as $item) {
+            $map[$item->type][$item->id] = $item;
+        }
+        return $map;
     }
 
-    private function buildIncludedMap(array $included): Collection
+    private function processEventBatch(array $data, $userId, $locationId, array $includedMap): array
     {
+        $events = [];
 
-        $included  = collect($included)->keyBy(function ($item) {
-            return $item->type . '.' . $item->id;  // "Event.123"
-        });
-        return $included;
-    }
+        foreach ($data as $item) {
+            $startsAt = Carbon::parse($item->attributes->starts_at);
+            $eventId = $item->relationships->event->data->id ?? null;
+            $eventName = $includedMap['Event'][$eventId]->attributes->name ?? 'Unknown Event';
+            $headcounts = $item->relationships->headcounts->data ?? [];
 
-    private function processEventBatch(array $records, $userId, $locationId, Collection $includedMap, $type = ''): array
-    {
-        $data = [];
-
-        $events = $includedMap->where('type', 'EventTime')->toArray();
-        $includedMap = $includedMap->toArray();
-        if ($type == 'headcount') {
-            $count = 0;
-            $data = [];
-            foreach ($records as $item) {
-                $eventTime = $item->relationships->event_time->data->id;
-                $attendanceType = $item->relationships->attendance_type->data->id;
-                $event = $events['EventTime.' . $eventTime];
-                $record = [
-                    'attendance_id' => $attendanceType,
-                    'value' => $item->attributes->total,
-                    'headcount_id' => $item->id,
-                    'event_id' => $event->relationships->event->data->id,
-                    'event_time_id' => $eventTime,
-                ];
-                $startsAt = Carbon::parse($event->attributes->starts_at);
-                $record = $this->mergeDateFields($record, $startsAt);
-                $data[] =  $record;
-                // Headcount::updateOrCreate(
-                //     ['headcount_id' => $item->id],
-                //     [
-                //         'total' => $item->attributes->total,
-                //         'headcount_created_at' => $item->attributes->created_at
-                //             ? Carbon::parse($item->attributes->created_at)->format('Y-m-d H:i:s')
-                //             : null,
-                //         'headcount_updated_at' => $item->attributes->updated_at
-                //             ? Carbon::parse($item->attributes->updated_at)->format('Y-m-d H:i:s')
-                //             : null,
-                //     ]
-                // );
-                $count++;
-            }
-
-            // $data = [];
-            foreach ($events as $event) {
-                $attrib = $event->attributes;
-                $values = [
-                    'regular' => $attrib->regular_count ?? 0,
-                    'guest' => $attrib->guest_count ?? 0,
-                    'volunteer' => $attrib->volunteer_count ?? 0,
-                ];
-
-                foreach ($values as $v => $total) {
-
-                    $record = [
-                        'attendance_id' => $v,
-                        'value' => $total,
-                        'headcount_id' => $v,
-                        'event_id' => $event->relationships->event->data->id,
-                        'event_time_id' => $event->id,
-                    ];
-                    $startsAt = Carbon::parse($attrib->starts_at);
-                    $record = $this->mergeDateFields($record, $startsAt);
-                    $data[] =  $record;
-                }
-            }
-        } else {
-            foreach ($records as $item) {
-                $startsAt = Carbon::parse($item->attributes->starts_at);
-                $eventId = $item->relationships->event->data->id ?? null;
-                $eventName = $includedMap['Event.' . $eventId]->attributes->name ?? 'Unknown Event';
-                $headcounts = $item->relationships->headcounts->data ?? [];
-
-                if (!empty($headcounts)) {
-                    foreach ($headcounts as $hcRef) {
-                        $hc = $includedMap['Headcount.' . $hcRef->id] ?? null;
-                        if ($hc) {
-                            $data[] = $this->buildEventData($item, $eventId, $eventName, $userId, $locationId, $hc, $startsAt);
-                        }
-                    }
-                } else {
-                    $attrib = $item->attributes;
-                    $values = [
-                        'regular' => $attrib->regular_count ?? 0,
-                        'guest' => $attrib->guest_count ?? 0,
-                        'volunteer' => $attrib->volunteer_count ?? 0,
-                    ];
-                    foreach ($values as $v => $total) {
-
-                        $item->key = $v;
-                        $item->total = $total;
-                        $data[] = $this->buildEventData($item, $eventId, $eventName, $userId, $locationId, null, $startsAt);
+            if (!empty($headcounts)) {
+                foreach ($headcounts as $hcRef) {
+                    $hc = $includedMap['Headcount'][$hcRef->id] ?? null;
+                    if ($hc) {
+                        $events[] = $this->buildEventData($item, $eventId, $eventName, $userId, $locationId, $hc, $startsAt);
                     }
                 }
+            } else {
+                $events[] = $this->buildEventData($item, $eventId, $eventName, $userId, $locationId, null, $startsAt);
             }
         }
 
-
-
-
-        return $data;
+        return $events;
     }
-    private function mergeDateFields($data, Carbon $startsAt)
-    {
-        $newData = [
-            'week_reference' => $this->getWeekReference($startsAt),
-            'service_date'  => $startsAt->toDateString(),
-            'service_time'  => $startsAt->format('H:i:s'),
-        ];
-        return array_merge($data, $newData);
-    }
+
     private function buildEventData($item, $eventId, $eventName, $userId, $locationId, $headcount, Carbon $startsAt): array
     {
-        $createdAt  = $headcount ? $headcount->attributes->created_at : $item->attributes->starts_at;
-        $updatedAt  = $headcount ? $headcount->attributes->updated_at : $item->attributes->starts_at;
-        $record = [
+        return [
             'event_time_id' => (string)$item->id,
             'headcount_id'  => $headcount->id ?? null,
             'user_id'       => $userId,
@@ -316,8 +216,6 @@ class SyncEventsData extends Command
             'location_id'   => $locationId,
             'synced_at'     => now(),
         ];
-        $record = $this->mergeDateFields($record, $startsAt);
-        return $record;
     }
 
     private function upsertBatch(array $batch): void
@@ -342,8 +240,6 @@ class SyncEventsData extends Command
                     'synced_at'
                 ]
             );
-
-            EventsData::where('value',0)->delete();
         });
     }
 }
