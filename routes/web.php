@@ -145,24 +145,6 @@ Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
 
 
 
-Route::get('/charts', [ChartController::class, 'index']);
-Route::get('/charts/data', [ChartController::class, 'getChartData']);
-Route::get('/event-filter', [ChartController::class, 'index']);
-Route::get('/event-filter2', [ChartController::class, 'eventFilter2']);
-
-
-Route::get('/get-filtered-chart-data', [ChartController::class, 'getFilteredChartData']);
-
-Route::get('/get-chart-json', [ChartController::class, 'getApexChartData']);
-Route::get('/get-pie-chart-data', [ChartController::class, 'getPieChartData']);
-
-Route::get('/ruff', [ChartController::class, 'ruff']);
-
-Route::get('/get-chart-json', [ChartController::class, 'getChartJson']);
-
-Route::get('/get-events-chart-data', [ChartController::class, 'getEventsChartData']);
-
-
 
 // Planning Center Connection Routes
 Route::prefix('planning-center')->name('planningcenter.')->group(function () {
@@ -226,16 +208,20 @@ Route::prefix('locations')->name('locations.')->group(function () {
         Route::get('/get/settings', [$c, 'getPlanningSettings'])->name('get.settings');
         Route::get('events', [PlanningCenterController::class, 'getEvents'])->name('events');
 
-
         Route::get('workflow/saved', [$c, 'saveWorkflow'])->name('saveWorkflow');
         Route::get('listworkflows', [$c, 'listworkflows'])->name('listworkflows');
         Route::get('disconnectplanning', [$c, 'disconnectplanning'])->name('disconnectplanning');
 
-
         Route::get('/headcounts/visualization', [$c, 'headCountGraphs'])->name('headcount.visuals');
+
+        // ADD THESE NEW ROUTES FOR CHARTS
+        Route::get('/event-filter', [ChartController::class, 'index'])->name('event.filter');
+        Route::get('/get-chart-json', [ChartController::class, 'getChartJson'])->name('chart.json');
+        Route::get('/get-pie-chart-data', [ChartController::class, 'getPieChartData'])->name('pie.chart.data');
+        Route::get('/get-events-chart-data', [ChartController::class, 'getEventsChartData'])->name('events.chart.data');
+        Route::get('/get-line-chart-data', [ChartController::class, 'getLineChartData'])->name('line.chart.data');
     });
 });
-
 
 Route::get('/test/eventtimes', [PlanningController::class, 'eventtimes']);
 
@@ -312,5 +298,3 @@ Route::get('/get-attendance-type', function (PlanningService $service) {
 
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-12-01
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[updated_at]=2025-12-01
-
-

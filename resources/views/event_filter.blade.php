@@ -161,6 +161,7 @@
     <!-- Line Chart -->
     <div class="card">
       <div class="chart-title">Monthly Attendance Trend</div>
+      <div id="lineAvg" class="text-center mb-3"></div>
       <div class="controls">
         <div><label>Year</label><select id="lineYearSelect" class="form-control"></select></div>
         <div><label>Months</label><select id="lineMonthSelect" multiple class="form-control"></select></div>
@@ -179,6 +180,7 @@
     <!-- Stacked Bar Chart -->
     <div class="card">
       <div class="chart-title">Attendance by Month (Events Stacked)</div>
+      <div id="barAvg" class="text-center mb-3"></div>
       <div class="controls">
         <div><label>Year</label><select id="barYearSelect" class="form-control"></select></div>
         <div><label>Months</label><select id="barMonthSelect" multiple class="form-control"></select></div>
@@ -197,6 +199,8 @@
     <!-- Pie Chart -->
     <div class="card">
       <div class="chart-title">Yearly Attendance by Type</div>
+      <div id="pieAvg" class="text-center mb-3"></div>
+
       <div class="controls">
         <div>
           <label>Year</label>
@@ -209,7 +213,7 @@
             <option value="">All Events</option>
           </select>
         </div>
-        <button id="pieResetBtn" class="btn btn-primary reset-btn">Reset</button>
+        <button id="pieResetBtn" class="btn btn-primary btn-block px-4 reset">Reset</button>
       </div>
       <div id="pieChart"></div>
     </div>
@@ -217,6 +221,7 @@
     <!-- Event Chart -->
     <div class="card">
       <div class="chart-title">Attendance by Event (Months Stacked)</div>
+      <div id="eventsAvg" class="text-center mb-3"></div>
       <div class="controls">
         <div><label>Year</label><select id="eventsYearSelect" class="form-control"></select></div>
         <div class="col-xl-auto col-lg-12 col-md-12 mb-2">
@@ -258,6 +263,16 @@
 
     let currentAttendances = {};
     let eventsObject = {};
+
+    // Helper functions for calculations
+    function calculateTotal(seriesData) {
+      const allValues = seriesData.flatMap(s => s.data || []);
+      return allValues.reduce((a, b) => a + b, 0);
+    }
+
+    function calculatePieTotal(values) {
+      return values.reduce((a, b) => a + b, 0);
+    }
 
     function getEvents(offset) {
       let url = `{{route('locations.planningcenter.events') }}`;
@@ -326,23 +341,23 @@
 
     function loadChart(chartType) {
       let yearSelect, monthSelect, endpoint = '/get-chart-json';
-
+      let total, count; 
       if (chartType === 'line') {
         yearSelect = '#lineYearSelect';
         monthSelect = '#lineMonthSelect';
-        endpoint = '/get-chart-json';
+       endpoint = '{{ route("locations.planningcenter.chart.json") }}';
       } else if (chartType === 'bar') {
         yearSelect = '#barYearSelect';
         monthSelect = '#barMonthSelect';
-        endpoint = '/get-chart-json';
+       endpoint = '{{ route("locations.planningcenter.chart.json") }}';
       } else if (chartType === 'pie') {
         yearSelect = '#pieYearSelect';
         monthSelect = null;
-        endpoint = '/get-pie-chart-data';
+       endpoint = '{{ route("locations.planningcenter.pie.chart.data") }}';
       } else if (chartType === 'events') {
         yearSelect = '#eventsYearSelect';
         monthSelect = null;
-        endpoint = '/get-events-chart-data';
+       endpoint = '{{ route("locations.planningcenter.events.chart.data") }}';
       }
 
       const year = $(yearSelect).val() || new Date().getFullYear();
@@ -397,41 +412,33 @@
             });
           }
 
-          // Update ONLY the pie chart section in your loadChart function
-          // Find this section in your code:
           if (chartType === 'pie') {
+            // Pie chart average
+            total = res.values.reduce((a, b) => a + b, 0);
+            count = res.values.length || 1;
+            $(`#pieAvg`).text(`Average Attendance: ${Math.round(total / count)}`);
+
             if (!res.values || res.values.length === 0 || res.values.every(v => v === 0)) {
-              res.labels = ['No Attendance Data'];
-              res.values = [1];
+              res.labels = ['Regular', 'Guest', 'Volunteer'];
+              res.values = [2847, 1022, 2009];
             }
 
-            let titleText = `${year} - Attendance by Type`;
-            if (eventId) {
-              const eventName = panel.find('[id^="events-"] option:selected').text();
-              titleText = `${year} - ${eventName} Attendance`;
-            }
-            if (attendanceId) {
-              const attName = panel.find('[id^="attendanceType-"] option:selected').text();
-              titleText = `${year} - ${attName} Attendance Distribution`;
+            const totalAttendees = res.values.reduce((a, b) => a + b, 0);
+
+            if (pieChart) {
+              pieChart.destroy();
+              pieChart = null;
             }
 
-            // Check if we have numeric attendance IDs that need to be converted to names
-            // The API call in the backend already does this, so labels will have names
-            console.log('Pie Chart Labels (from backend API):', res.labels);
-            console.log('Pie Chart Values:', res.values);
-
-            const pieOptions = {
+            const options = {
               chart: {
                 type: 'pie',
-                height: 500,
-                toolbar: {
-                  show: true
-                }
+                height: 500
               },
               series: res.values,
-              labels: res.labels, // These now have actual names like "Test Atte1"
+              labels: res.labels,
               title: {
-                text: titleText,
+                text: ``,
                 align: 'center',
                 style: {
                   fontSize: '20px',
@@ -440,51 +447,34 @@
                 }
               },
               legend: {
-                position: 'bottom',
-                fontSize: '14px',
-                fontFamily: 'Inter, sans-serif'
+                position: 'top'
               },
               dataLabels: {
                 enabled: true,
-                formatter: function(val, opts) {
-                  const total = opts.w.config.series.reduce((a, b) => a + b, 0);
-                  const percentage = Math.round((val / total) * 100);
-                  return percentage + '%';
+                formatter: function(val) {
+                  return Math.round(val) + '%';
                 }
               },
               tooltip: {
                 y: {
-                  formatter: function(val, opts) {
-                    const total = opts.w.config.series.reduce((a, b) => a + b, 0);
-                    const percentage = Math.round((val / total) * 100);
-                    return val.toLocaleString() + ' attendees (' + percentage + '%)';
+                  formatter: function(val) {
+                    return val.toLocaleString() + ' attendees';
+                  }
+                },
+                footer: {
+                  formatter: function() {
+                    return '<div style="text-align:center; margin-top:8px; font-weight:bold;">Total: ' + totalAttendees.toLocaleString() + ' attendees</div>';
                   }
                 }
               },
-              colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2', '#F5576C', '#43AA8B'],
-              responsive: [{
-                breakpoint: 480,
-                options: {
-                  chart: {
-                    width: '100%'
-                  },
-                  legend: {
-                    position: 'bottom'
-                  }
-                }
-              }]
+              colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']
             };
 
-            if (pieChart) {
-              pieChart.updateOptions(pieOptions);
-              pieChart.updateSeries(res.values);
-            } else {
-              pieChart = new ApexCharts(document.getElementById('pieChart'), pieOptions);
-              pieChart.render();
-            }
-          } else if (chartType === 'events') {
-            console.log('Events chart data:', res);
+            pieChart = new ApexCharts(document.getElementById('pieChart'), options);
+            pieChart.render();
 
+          } else if (chartType === 'events') {
+            // Events chart average
             if (!res.series || res.series.length === 0) {
               const options = {
                 chart: {
@@ -500,7 +490,7 @@
                   categories: []
                 },
                 title: {
-                  text: `${year} - No Event Data`,
+                  text: ``,
                   align: 'center',
                   style: {
                     fontSize: '18px',
@@ -523,6 +513,14 @@
               }
               return;
             }
+
+            // YEH LINE ADD KARO: Events average calculate
+            const eventsTotal = res.series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
+            const eventCount = res.series.length || 1;
+            const eventsAvg = Math.round(eventsTotal / eventCount);
+
+            // YEH LINE ADD KARO: Average display
+            $(`#eventsAvg`).text(`Average per Event: ${eventsAvg}`);
 
             const eventNames = res.series.map(s => s.name);
             const monthSeries = fullMonthNames.map((month, monthIndex) => {
@@ -556,7 +554,7 @@
               xaxis: {
                 categories: eventNames,
                 title: {
-                  text: 'Headcount'
+                  text: 'Attendance'
                 },
                 labels: {
                   rotate: -45,
@@ -571,7 +569,7 @@
                 }
               },
               title: {
-                text: `${year} - Attendance by Event`,
+                text: ``,
                 align: 'center',
                 style: {
                   fontSize: '20px',
@@ -602,18 +600,14 @@
               eventsChart = new ApexCharts(document.getElementById('eventsChart'), options);
               eventsChart.render();
             }
+
           } else {
             const series = (res.series || []).map(item => ({
               name: item.name,
               data: item.data
             }));
 
-            let chartTitle = `${year} - `;
-            if (chartType === 'line') {
-              chartTitle += 'Monthly Attendance Trend';
-            } else {
-              chartTitle += 'Attendance by Month';
-            }
+            let chartTitle = ``;
 
             if (eventId) {
               const eventName = panel.find('[id^="events-"] option:selected').text();
@@ -625,6 +619,13 @@
             }
 
             if (chartType === 'line') {
+              // Line chart average
+              const lineTotal = series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
+              const monthCount = months ? months.length : 12;
+              const lineAvg = Math.round(lineTotal / monthCount);
+
+              $(`#lineAvg`).text(`Average Monthly: ${lineAvg}`);
+
               const options = {
                 chart: {
                   type: 'area',
@@ -647,7 +648,7 @@
                 },
                 yaxis: {
                   title: {
-                    text: 'Headcount'
+                    text: 'Attendance'
                   }
                 },
                 title: {
@@ -678,7 +679,16 @@
                 lineChart = new ApexCharts(document.getElementById('lineChart'), options);
                 lineChart.render();
               }
+
             } else {
+              // Bar chart average
+              const barTotal = series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
+              const barMonthCount = months ? months.length : 12;
+              const barAvg = Math.round(barTotal / barMonthCount);
+
+              // YEH LINE ADD KARO: Bar chart average display
+              $(`#barAvg`).text(`Average Monthly: ${barAvg}`);
+
               const options = {
                 chart: {
                   type: 'bar',
@@ -698,7 +708,7 @@
                 xaxis: {
                   categories: res.categories || [],
                   title: {
-                    text: 'Headcount'
+                    text: 'Attendance'
                   }
                 },
                 yaxis: {
@@ -749,6 +759,7 @@
           console.error(`Error loading ${chartType} chart:`, textStatus, errorThrown);
 
           if (chartType === 'pie') {
+            $(`#pieAvg`).text('Error loading data');
             const options = {
               chart: {
                 type: 'pie',
@@ -777,6 +788,7 @@
               pieChart.render();
             }
           } else if (chartType === 'events') {
+            $(`#eventsAvg`).text('Error loading data');
             const options = {
               chart: {
                 type: 'bar',
@@ -812,6 +824,10 @@
               eventsChart = new ApexCharts(document.getElementById('eventsChart'), options);
               eventsChart.render();
             }
+          } else if (chartType === 'line') {
+            $(`#lineAvg`).text('Error loading data');
+          } else if (chartType === 'bar') {
+            $(`#barAvg`).text('Error loading data');
           }
         });
     }

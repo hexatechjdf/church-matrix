@@ -6,10 +6,20 @@ use Illuminate\Http\Request;
 use App\Models\CrmToken;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Services\PlanningService;
+
 
 
 class ChartController extends Controller
 {
+
+    private $planningService;
+
+    public function __construct(PlanningService $planningService)
+    {
+        $this->planningService = $planningService;
+    }
+
 
     public function index()
     {
@@ -90,64 +100,94 @@ class ChartController extends Controller
     }
 
 
- public function getPieChartData(Request $request)
+   public function getPieChartData(Request $request)
 {
     $year = $request->input('year', date('Y'));
-    $userToken = CrmToken::where('user_id', 883)->first()->access_token ?? '';
+    $eventId = $request->input('event_id'); // EVENT FILTER
 
-    $results = DB::table('events_data')
+    // Get user token
+    $userId = 883;
+    $token = CrmToken::where('user_id', $userId)
+        ->where('crm_type', 'planning')
+        ->first();
+
+    if (!$token || !$token->access_token) {
+        return response()->json([
+            'labels' => ['No Token'],
+            'values' => [1],
+            'years' => [$year]
+        ]);
+    }
+
+    $userToken = $token->access_token;
+
+    // Build query with event filter
+    $query = DB::table('events_data')
         ->whereYear('service_date', $year)
-        ->whereNotNull('attendance_id')
+        ->where('value', '>', 0)
+        ->whereNotNull('attendance_id');
+
+    // ADD THIS: Event filter apply karo
+    if ($eventId) {
+        $query->where('event_id', $eventId);
+    }
+
+    // Get attendance types with their totals
+    $results = $query
         ->select('attendance_id', DB::raw('SUM(value) as total'))
         ->groupBy('attendance_id')
+        ->orderByDesc('total')
         ->get();
 
+    // Log for debugging
+    \Log::info("Pie Chart Request - Year: {$year}, Event ID: {$eventId}, Results: " . $results->count());
+
+    // If no data, show empty
     if ($results->isEmpty()) {
         return response()->json([
             'labels' => ['No Data'],
             'values' => [1],
-            'years' => range(date('Y') - 5, date('Y'))
+            'years' => [$year],
+            'year' => (int)$year
         ]);
     }
 
     $labels = [];
     $values = [];
-    
+
     foreach ($results as $row) {
         $attendanceId = $row->attendance_id;
-        
+
+        // Handle default types
         if (in_array($attendanceId, ['regular', 'guest', 'volunteer'])) {
             $labels[] = ucfirst($attendanceId);
         } else {
-            // Make API call to get attendance type name
-            $url = "check-ins/v2/attendance_types/{$attendanceId}";
-            $response = $this->planningService->planning_api_call($url, 'get', '', [], false, $userToken);
-            
-            if ($response && isset($response->data->attributes->name)) {
-                $labels[] = $response->data->attributes->name;
-            } else {
+            // Fetch name from API
+            try {
+                $url = "check-ins/v2/attendance_types/{$attendanceId}";
+                $response = $this->planningService->planning_api_call($url, 'get', '', [], false, $userToken);
+
+                if ($response && isset($response->data->attributes->name)) {
+                    $labels[] = $response->data->attributes->name;
+                } else {
+                    $labels[] = "Attendance {$attendanceId}";
+                }
+            } catch (\Exception $e) {
                 $labels[] = "Type {$attendanceId}";
             }
         }
-        
+
         $values[] = (int)$row->total;
     }
-
-    $availableYears = DB::table('events_data')
-        ->selectRaw('YEAR(service_date) as year')
-        ->distinct()
-        ->orderByDesc('year')
-        ->pluck('year')
-        ->toArray();
 
     return response()->json([
         'labels' => $labels,
         'values' => $values,
-        'years' => $availableYears,
-        'year' => (int)$year
+        'years' => [$year],
+        'year' => (int)$year,
+        'event_id' => $eventId // Debug ke liye
     ]);
 }
-
 
     // public function getApexChartData(Request $request)
     // {
@@ -276,55 +316,55 @@ class ChartController extends Controller
     }
 
     public function getEventsChartData(Request $request)
-{
-    $year = $request->input('year', date('Y'));
-    $months = $request->input('months');
+    {
+        $year = $request->input('year', date('Y'));
+        $months = $request->input('months');
 
-    $query = DB::table('events_data')
-        ->whereYear('service_date', $year)
-        ->where('value', '>', 0)
-        ->whereNotNull('service_name');
+        $query = DB::table('events_data')
+            ->whereYear('service_date', $year)
+            ->where('value', '>', 0)
+            ->whereNotNull('service_name');
 
-    if ($months && is_array($months)) {
-        $query->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
-    }
-
-    $data = $query->select(
-        'service_name as event',
-        DB::raw('MONTH(service_date) as month'),
-        DB::raw('SUM(value) as total')
-    )
-        ->groupBy('event', 'month')
-        ->orderBy('month')
-        ->get();
-
-    $events = $data->pluck('event')->unique()->sort()->values();
-    $series = [];
-
-    foreach ($events as $event) {
-        $monthlyData = array_fill(0, 12, 0);
-        foreach ($data->where('event', $event) as $row) {
-            $monthlyData[$row->month - 1] = (int)$row->total;
+        if ($months && is_array($months)) {
+            $query->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
         }
 
-        $series[] = [
-            'name' => $event,
-            'data' => $monthlyData
-        ];
+        $data = $query->select(
+            'service_name as event',
+            DB::raw('MONTH(service_date) as month'),
+            DB::raw('SUM(value) as total')
+        )
+            ->groupBy('event', 'month')
+            ->orderBy('month')
+            ->get();
+
+        $events = $data->pluck('event')->unique()->sort()->values();
+        $series = [];
+
+        foreach ($events as $event) {
+            $monthlyData = array_fill(0, 12, 0);
+            foreach ($data->where('event', $event) as $row) {
+                $monthlyData[$row->month - 1] = (int)$row->total;
+            }
+
+            $series[] = [
+                'name' => $event,
+                'data' => $monthlyData
+            ];
+        }
+
+        $availableYears = DB::table('events_data')
+            ->whereNotNull('service_date')
+            ->selectRaw('YEAR(service_date) as year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->toArray();
+
+        return response()->json([
+            'series' => $series,
+            'available_years' => $availableYears,
+            'year' => (int)$year
+        ]);
     }
-
-    $availableYears = DB::table('events_data')
-        ->whereNotNull('service_date')
-        ->selectRaw('YEAR(service_date) as year')
-        ->distinct()
-        ->orderByDesc('year')
-        ->pluck('year')
-        ->toArray();
-
-    return response()->json([
-        'series' => $series,
-        'available_years' => $availableYears,
-        'year' => (int)$year
-    ]);
-}
 }
