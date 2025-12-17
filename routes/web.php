@@ -19,6 +19,7 @@ use App\Http\Controllers\Location\Churchmatrix\ServiceTimeController;
 use App\Http\Controllers\Location\Churchmatrix\SettingIntergration;
 use App\Http\Controllers\Location\Churchmatrix\StatsController;
 use App\Http\Controllers\ChartController;
+use App\Http\Controllers\Location\Planning\ChartController;
 use App\Models\Locations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -148,10 +149,21 @@ Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
 
 Route::get('/charts', [ChartController::class, 'index']);
 Route::get('/charts/data', [ChartController::class, 'getChartData']);
-Route::get('/event-filter', [ChartController::class, 'eventFilter']);
-Route::get('/apex-chart-data', [ChartController::class, 'getApexChartData']);
+Route::get('/event-filter', [ChartController::class, 'index']);
+Route::get('/event-filter2', [ChartController::class, 'eventFilter2']);
 
-// routes/web.php
+
+Route::get('/get-filtered-chart-data', [ChartController::class, 'getFilteredChartData']);
+
+Route::get('/get-chart-json', [ChartController::class, 'getApexChartData']);
+Route::get('/get-pie-chart-data', [ChartController::class, 'getPieChartData']);
+
+Route::get('/ruff', [ChartController::class, 'ruff']);
+
+Route::get('/get-chart-json', [ChartController::class, 'getChartJson']);
+
+Route::get('/get-events-chart-data', [ChartController::class, 'getEventsChartData']);
+
 
 
 // Planning Center Connection Routes
@@ -234,6 +246,9 @@ Route::prefix('locations')->name('locations.')->group(function () {
         $c = PlanningController::class;
         Route::get('/', [$c, 'index'])->name('index');
         Route::get('/get/settings', [$c, 'getPlanningSettings'])->name('get.settings');
+        Route::get('events', [PlanningCenterController::class, 'getEvents'])->name('events');
+
+
         Route::get('workflow/saved', [$c, 'saveWorkflow'])->name('saveWorkflow');
         Route::get('listworkflows', [$c, 'listworkflows'])->name('listworkflows');
         Route::get('disconnectplanning', [$c, 'disconnectplanning'])->name('disconnectplanning');
@@ -295,12 +310,12 @@ use App\Models\CrmToken;
 
 
 Route::get('/get-head-counts', function (PlanningService $service) {
-    $t = CrmToken::where('id', 5)->first();
+    $t = CrmToken::where('id', 9)->first();
     $planning = @$t->access_token;
 
     $request = new Request();
     $request->merge([
-        'user_id' => 886,
+        'user_id' => 883,
         // agar aur fields chahiye to yahan add kar dein
     ]);
     $w = $service->planning_api_call('check-ins/v2/event_times?include=event,headcounts&per_page=50', 'get', '', [], false, $planning);
@@ -309,12 +324,12 @@ Route::get('/get-head-counts', function (PlanningService $service) {
 });
 
 Route::get('/get-attendance-type', function (PlanningService $service) {
-    $t = CrmToken::where('id', 5)->first();
+    $t = CrmToken::where('id', 9)->first();
     $planning = @$t->access_token;
 
     $request = new Request();
     $request->merge([
-      'user_id' => 884,
+        'user_id' => 883,
     ]);
     $w = $service->planning_api_call('check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-11-28', 'get', '', [], false, $planning);
 
@@ -323,3 +338,5 @@ Route::get('/get-attendance-type', function (PlanningService $service) {
 
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-12-01
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[updated_at]=2025-12-01
+
+

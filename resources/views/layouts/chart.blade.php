@@ -2,237 +2,89 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Church Metric Chart</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planning Center • Full Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+      min-height: 100vh;
+      padding: 30px 20px;
+      color: #1e293b;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #858794 0%, #7f7e80 100%);
-            min-height: 100vh;
-            padding: 30px 20px;
-            color: #333;
-        }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
 
-        .dashboard {
-            max-width: 1300px;
-            margin: 0 auto;
-        }
+    .header h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
 
-        .filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+      padding: 28px;
+      margin-bottom: 40px;
+      border: 1px solid rgba(139, 92, 246, 0.1);
+    }
 
-        .filter-group {
-            position: relative;
-        }
+    .chart-title {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #4c1d95;
+    }
 
-        .filter-group select {
-            width: 100%;
-            padding: 14px 40px 14px 16px;
-            border: none;
-            border-radius: 12px;
-            background: white;
-            font-size: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            appearance: none;
-            cursor: pointer;
-        }
+    .reset-btn {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border: none;
+      font-weight: 600;
+      height: 52px;
+      border-radius: 14px;
+    }
 
-        .filter-group i {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #667eea;
-            pointer-events: none;
-        }
+    .reset-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
+    }
 
-        .week-picker {
-            position: relative;
-        }
-
-        .week-trigger {
-            width: 100%;
-            padding: 14px 16px;
-            border: none;
-            border-radius: 12px;
-            background: white;
-            font-size: 15px;
-            font-weight: 500;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .week-trigger:hover {
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .week-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            margin-top: 8px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.22);
-            overflow: hidden;
-            z-index: 1000;
-            display: none;
-            flex-direction: row;
-        }
-
-        .week-dropdown.open {
-            display: flex;
-        }
-
-        .week-buttons {
-            background: #f8f9fa;
-            padding: 16px 8px;
-            width: 140px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .week-btn {
-            padding: 10px 12px;
-            border: none;
-            background: #e9ecef;
-            border-radius: 10px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .week-btn:hover {
-            background: #dee2e6;
-        }
-
-        .week-btn.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .mini-calendar {
-            padding: 4px;
-            min-width: 231px;
-        }
-
-        .cal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .cal-month {
-            font-size: 15px;
-        }
-
-        .cal-weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 6px;
-        }
-
-        .cal-days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 0px;
-            text-align: center;
-        }
-
-        .cal-day {
-            width: 32px;
-            height: 32px;
-            line-height: 32px;
-            border-radius: 50%;
-            font-size: 13px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .cal-day:hover {
-            background: #e9ecef;
-        }
-
-        .cal-day.today {
-            background: #28a745;
-            color: white;
-            font-weight: bold;
-        }
-
-        .cal-day.in-week {
-            background: #e3f2fd;
-            color: #1976d2;
-            font-weight: bold;
-        }
-
-        .chart-container {
-            background: rgba(255, 255, 255, 0.97);
-            backdrop-filter: blur(12px);
-            padding: 40px;
-            border-radius: 25px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .chart-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
-            background-size: 200%;
-            animation: gradientShift 4s ease infinite;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            height: 420px;
-        }
-
-        @keyframes gradientShift {
-
-            0%,
-            100% {
-                background-position: 0% 50%
-            }
-
-            50% {
-                background-position: 100% 50%
-            }
-        }
-    </style>
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 25px;
+    }
+    .chart-average{
+        text-align: center;
+    }
+  </style>
 </head>
 
 <body>
-@yield('content')
-  <script>
+    @yield('content')
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/billboard.js/dist/billboard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+
+    <script>
         let currentDate = new Date();
         // const chartCtx = document.getElementById('myChart').getContext('2d');
         // const chart = new Chart(chartCtx, {
@@ -294,10 +146,88 @@
 
             const res = await fetch(`/charts/data?${params}`);
             const result = await res.json();
+            const allValues = _(result.json)
+                .groupBy("month_year")
+                .map((items, month) => {
+                    const base = {
+                        month_year: month,
+                        first_created_date: items[0].first_created_date
+                    };
 
-            chart.data.labels = result.labels;
-            chart.data.datasets = result.datasets;
-            chart.update();
+                    // Add dynamic keys
+                    items.forEach(i => {
+                        base[i.attendance_id] = i.attendance_count;
+                    });
+
+                    return base;
+                })
+                .value();
+
+            console.log(result);
+            const chart = bb.generate({
+                size: {},
+                data: {
+
+                    json: allValues,
+                    keys: {
+                        x: result.keys.name,
+                        value: result.keys.values
+                    },
+                    groups: [
+                        result.keys.values
+                    ],
+                    type: "bar" // smooth line
+
+                },
+                tooltip: {
+                    contents: function(data, defaultTitleFormat, defaultValueFormat, color) {
+
+                        console.log(data);
+                        // find original json row
+                        data = data.filter(t => t.value != null);
+
+                        let row = chart.config().data.json[data[0].x][result.keys.name];
+
+                        const total = data.reduce((sum, val) => sum + val.value, 0);
+                        let html = `<table class="bb-tooltip"><tbody>`;
+                        html += `<tr><th colspan="2">${row}</th></tr>`;
+
+                        // Show normal dataset values
+                        data.forEach(d => {
+                            html += `
+          <tr>
+            <td style="color:${color(d)}">${d.id}</td>
+            <td>${d.value}</td>
+          </tr>
+        `;
+                        });
+
+                        // Add custom TOTAL row
+                        html += `
+        <tr style="font-weight:bold;">
+          <td>Total</td>
+          <td>${total}</td>
+        </tr>
+      `;
+
+                        html += `</tbody></table>`;
+                        return html;
+                    }
+                },
+                axis: {
+                    x: {
+                        type: "category"
+                    }
+                },
+                point: {
+                    r: 4 // size of points
+                },
+                bindto: "#chart"
+            });
+
+            // chart.data.labels = result.labels;
+            // chart.data.datasets = result.datasets;
+            // chart.update();
         }
 
         function renderCalendar() {
@@ -366,9 +296,8 @@
         document.getElementById('eventFilter').addEventListener('change', loadChartData);
 
         // Initial render
-        updateWeekDisplay();
-        loadChartData();
 
+        loadChartData();
     </script>
 
 </body>
