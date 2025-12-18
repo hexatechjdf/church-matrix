@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\PlanningService;
 use App\Models\CrmToken;
+use App\Jobs\Planning\SyncPlanningTokensJob;
 
 class PlanningController extends Controller
 {
@@ -26,18 +27,13 @@ class PlanningController extends Controller
     {
         $code = $request->code;
         $loc_id = $request->location_id;
-        $user = loginUser($loc_id);
-        $crm =  $user->planningToken ?? null;
-
-        $data = $this->planningService->get_planning_token($code);
-
-        if ($data && property_exists($data, 'error')) {
-            return;
-            // return redirect()->route('auth.check')->withError($data->error_description);
+        list($status,$data) = $this->planningService->fetchPlanningToken($code,$loc_id,'code',false);
+        if ($data && is_array($data) && property_exists($data, 'error')) {
+            return redirect()->route('auth.check')->withError($data->error_description);
         }
+        $this->planningService->setUserToken($loc_id,$data->access_token);
         $res_me = $this->planningService->planning_api_call('people/v2', 'get', '', [], false, $data->access_token);
         if($res_me && property_exists($res_me,'data')){
-
             $org_id = $res_me->data->id;
             $org_id_name='-';
             try{
@@ -45,15 +41,18 @@ class PlanningController extends Controller
             }catch(\Exception $e){
 
             }
-            // $res = Setting::where('key', 'planning_organization_id')->where('value',$org_id)->where('location_id','<>',$loc_id)->first();
+            $crm = CrmToken::where('crm_type', 'planning')->where('company_id',$org_id)->where('user_id','<>',$loc_id)->first();
             if (!is_null($crm) && $crm) {
-                echo 'Unable to connect Organization already connect with '.get_setting($crm->location_id, 'ghl_location_id');
+                $user = $crm->user();
+                echo 'Unable to connect Organization already connect with '.$user->location;
                 die;
             }
             $payload = [
                 'access_token' => $data->access_token,
                 'refresh_token' => $data->refresh_token,
                 'company_id' => $org_id,
+                'crm_type'=>'planning',
+                'user_id'=>$loc_id,
                 'organization_name' => $org_id_name,
             ];
             $this->planningService->saveToken($loc_id,$payload);
@@ -159,25 +158,39 @@ class PlanningController extends Controller
         return response()->json($res);
     }
 
-    public function disconnectplanning(Request $req)
+   public function disconnectplanning(Request $request)
     {
-        try{
-            $req->token = decrypt( $req->token) ;
-        }catch(\Exception $e){
-            return 'unsaved or refresh the page';
+        try {
+            $token = decrypt($request->token);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid token or page refresh required'
+            ], 400);
         }
-        $user = loginUser($req->token);
-        if ($user) {
-            $ui = $user->id;
-            $payload = [
-                'access_token' => null,
-                'refresh_token' => null,
-                'company_id' => null,
-            ];
-            $this->planningService->saveToken($ui,$payload);
-            return 'saved';
+
+        $user = loginUser($token);
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
         }
-        return 'unsaved';
+
+        if ($user->planningToken) {
+            $user->planningToken->delete();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Disconnected successfully'
+        ]);
+    }
+
+    public function updateTokens(Request $request)
+    {
+        SyncPlanningTokensJob::dispatchSync(['refresh'=>1]);
     }
 
 

@@ -140,10 +140,10 @@ class SyncEventsDataJob implements ShouldQueue
         if ($type === 'headcount') {
             $filter = [];
             if ($createdAt = $options['created'] ?? null) {
-                $filter['[created_at]'] = $createdAt;
+                $filter['[created_at]'] = $createdAt.'T00:00:00Z';
             }
             if ($updatedAt = $options['updated'] ?? null) {
-                $filter['[updated_at]'] = $updatedAt;
+                $filter['[updated_at]'] = $updatedAt.'T00:00:00Z';;
             }
             return $this->fetchAttendances($offset, $token, $filter, $planningService);
         }
@@ -155,7 +155,7 @@ class SyncEventsDataJob implements ShouldQueue
     {
 
         $url = "check-ins/v2/event_times?include=event,headcounts&per_page=100&offset={$offset}";
-        $response = $planningService->planning_api_call($url, 'get', '', [], $token);
+        $response = $planningService->planning_api_call($url, 'get', '', [], false,$token);
 
         return $response ?? (object)[
             'data' => [],

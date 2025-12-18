@@ -59,6 +59,9 @@
     <div class="p-4 ">
         <div class="row">
             <div class="col-md-4 py-2">
+                {{-- <div class="alert alert-warning" role="alert">
+                    Failed to load data. Disconnect the integration and connect again to resolve the issue.
+                </div> --}}
                 <div class="card">
                     <div class="card-body">
                         <img src="https://storage.googleapis.com/msgsndr/NP4dT88lEnnjb3WVmyAQ/media/640b02ecd29c8caf3f6233b4.png"
@@ -139,7 +142,7 @@
                     childframe.close();
                     hideshowplanning();
                     getWorkflows();
-                    // window.location.href = "/";
+                    window.location.reload();
                 }
             });
         }
@@ -215,11 +218,20 @@
                 },
                 success: function(data) {
 
-                    $('.planningcenterbtn.connect').removeClass('disb');
-                    $('.planningcenterbtn.connect').show();
-                    $('.planningcenterbtn.disconnect').addClass('d-none');
-                    console.log(data);
-                    $('.planning_center_data').addClass('d-none');
+                    if (data.status) {
+                        toastr.success(data.message);
+
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                        // $('.planningcenterbtn.connect').removeClass('disb');
+                        // $('.planningcenterbtn.connect').show();
+                        // $('.planningcenterbtn.disconnect').addClass('d-none');
+                        // $('.planning_center_data').addClass('d-none');
+
+                    } else {
+                        toastr.error(data.message)
+                    }
 
                 },
                 error: function(data) {

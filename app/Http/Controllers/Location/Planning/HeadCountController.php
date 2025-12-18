@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Jobs\Planning\SyncEventsDataJob;
+use App\Services\PlanningService;
 
 
 class HeadCountController extends Controller
@@ -53,30 +54,35 @@ class HeadCountController extends Controller
 
 
         if ($type === 'date') {
-
-            $date = $request->date ?? Carbon::yesterday()->toDateString();
+            $date = $request->date ?? null;
+            $fetchAll=false;
+            if(!$date){
+                $fetchAll = true;
+                unset($params['user']);
+                unset($params['token']);
+                $date = Carbon::yesterday()->toDateString();
+            }
 
             $created = [...$params, 'created' => $date];
             $updated = [...$params, 'updated' => $date];
-            $this->syncCommand($created);
 
-            $this->syncCommand($updated);
-
+            if($fetchAll){
+                SyncPlanningTokensJob::dispatchSync($created);
+                SyncPlanningTokensJob::dispatchSync($updated);
+            }else{
+                $this->syncCommand($created);
+                $this->syncCommand($updated);
+            }
         }
 
         if ($type === 'year') {
-            $year = (int) $request->year;
-            $from = Carbon::create($year, 1, 1)->startOfDay();
-            $to   = Carbon::create($year, 12, 31)->endOfDay();
-            $created = [...$params, 'created' => $from, 'created_to' => $to];
-
-            $this->syncCommand($created);
+            $this->syncCommand($params);
         }
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Request has been sent. Data will be fetched soon'
-            ], 200);
+        return response()->json([
+            'status' => true,
+            'message' => 'Request has been sent. Data will be fetched soon'
+        ], 200);
     }
 
     public function syncCommand($params = [])
@@ -108,6 +114,58 @@ class HeadCountController extends Controller
         }
 
         return $options;
+    }
+
+    public function testConnection(Request $request,PlanningService $planningService)
+    {
+       $user = loginUser();
+        $token = $user->planningToken;
+
+        if (!$token) {
+            return response()->json([
+                'status' => false,
+                'type'   => 'token_missing',
+                'message'=> 'Please connect your Planning Center account first.'
+            ], 422);
+        }
+
+        try {
+            $url = 'check-ins/v2/event_times?include=event,headcounts&per_page=1&offset=1';
+            $access_token = $token->access_token;
+            $response = $planningService->planning_api_call(
+                $url,
+                'get',
+                '',
+                [],
+                false,
+                $access_token
+            );
+
+            if (isset($response->errors)) {
+                $errorMessage = $response->errors[0]->detail ?? 'Planning Center API error.';
+
+                if (str_contains(strtolower($errorMessage), 'do not have access')) {
+                    return response()->json([
+                        'status'  => false,
+                        'type'    => 'access_revoked',
+                        'message' => 'Failed to load data. Please disconnect your account and reconnect it again to restore access.'
+                    ], 403);
+                }
+            }
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Your Planning Center account is connected correctly.'
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'type'   => 'exception',
+                'message'=> 'Unable to connect to Planning Center. Please reconnect your account.',
+                'debug'  => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
 }

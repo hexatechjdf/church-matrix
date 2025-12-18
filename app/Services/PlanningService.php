@@ -178,37 +178,49 @@ class PlanningService
         return $bd;
     }
 
+  public function fetchPlanningToken($code, $user_id, $type = 'code',$save=true)
+  {
+            $payload = [
+                'grant_type' => $type == 'code' ? 'authorization_code' : 'refresh_token',
+                $type => $code,
+                'client_id' => getAccessToken( 'planning_client_id'),
+                'client_secret' => getAccessToken( 'planning_client_sceret'),
+            ];
 
-
-    // Renew token cron job
-    public function tokens_renew()
-    {
-        @ini_set('max_execution_time', 0);
-        @set_time_limit(0);
-
-        $token = '';
-        $uid = '';
-        $res = CrmToken::where('crm_type', 'planning')->get();
-        // $res=Setting::where('Key', 'planning_refresh_token')->get();
-        foreach ($res as $data) {
-            $token = $data->refresh_token;
-            $uid = $data->user_id;
-            $response = Http::post('https://api.planningcenteronline.com/oauth/token', [
-                'grant_type' => 'refresh_token',
-                'refresh_token' => $token,
-                'client_id' => getAccessToken($type = 'planning_client_id'),
-                'client_secret' => getAccessToken($type = 'planning_client_sceret'),
-            ]);
+            if($type== 'code')
+            {
+                $payload['redirect_uri'] = route('planningcenter.callback') . "?location_id=" . $user_id;
+            }
+            $token = [];
+            $status=false;
+            $response = Http::post($this->base .'oauth/token', $payload);
             if ($response->successful()) {
                 $data = $response->json();
-                $payload = [
+                $token = $data['access_token'] ?? $data;
+                if($token)
+                {
+
+                    $status=true;
+                    $payload = [
                     'access_token' => $data['access_token'],
                     'refresh_token' => $data['refresh_token'],
-                ];
-                $this->saveToken($uid, $payload);
+                    'user_id' => $user_id,
+                    'crm_type' => 'planning'
+                    ];
+                    $token = $payload;
+                    if($save){
+                            $this->saveToken($user_id, $payload);
+                    }
+
+                }
+
+
             }
-        }
-    }
+
+            return [$status,(object)$token];
+  }
+
+
 
     public function getHeadcounts($offset, $token = null, $filter = null)
     {

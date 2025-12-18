@@ -14,20 +14,20 @@
                  <i class="mdi mdi-plus-circle-outline mr-2"></i>Church Matrix</a>
          @endif
      @else
+         @php($user = loginUser())
          <a href="{{ route('locations.planningcenter.index') }}"
              class="btn btn-gradient-success px-4 mt-0 mb-3 import-users {{ request()->routeIs('locations.planningcenter.index') ? 'active-tab' : '' }}">
              <i class="mdi mdi-plus-circle-outline mr-2"></i>Integration
          </a>
+         @if (@$user->planningToken)
+             <a href="{{ route('locations.planningcenter.headcounts.index') }}"
+                 class="btn btn-gradient-primary px-4 mt-0 mb-3 {{ request()->routeIs('locations.planningcenter.headcounts.index') ? 'active-tab' : '' }}">
+                 <i class="mdi mdi-plus-circle-outline mr-2"></i>Attendance Update</a>
 
-
-         <a href="{{ route('locations.planningcenter.headcounts.index') }}"
-             class="btn btn-gradient-primary px-4 mt-0 mb-3 {{ request()->routeIs('locations.planningcenter.headcounts.index') ? 'active-tab' : '' }}">
-             <i class="mdi mdi-plus-circle-outline mr-2"></i>Attendance Update</a>
-
-
-         <a href="{{ route('locations.planningcenter.event.filter') }}"
-             class="btn btn-gradient-warning px-4 mt-0 mb-3 {{ request()->routeIs('locations.planningcenter.event.filter') ? 'active-tab' : '' }}">
-             <i class="mdi mdi-plus-circle-outline mr-2"></i>Reporting</a>
+             <a href="{{ route('locations.planningcenter.event.filter') }}"
+                 class="btn btn-gradient-warning px-4 mt-0 mb-3 {{ request()->routeIs('locations.planningcenter.event.filter') ? 'active-tab' : '' }}">
+                 <i class="mdi mdi-plus-circle-outline mr-2"></i>Reporting</a>
+         @endif
 
      @endif
 

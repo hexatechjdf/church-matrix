@@ -282,6 +282,7 @@ Route::get('planning', [DashboardController::class, 'planning'])->name('auth.pla
 Route::get('check/auth/error', [AutoAuthController::class, 'authError'])->name('error');
 
 Route::get('/fetch/headcounts', [HeadCountController::class, 'fetchLastHeadcounts'])->name('fetch.headcounts');
+Route::get('/test/planningcenter/connection', [HeadCountController::class, 'testConnection'])->name('test.planningcenter.connection');
 
 Route::get('/ll', function () {
     Auth::loginUsingId(1);
@@ -289,10 +290,7 @@ Route::get('/ll', function () {
 });
 
 
-Route::get('/tokens_renew', function () {
-
-    tokens_renew();
-})->name('tokens_renew');
+Route::get('/tokens_renew', [PlanningController::class, 'updateTokens'])->name('tokens_renew');
 
 
 Route::get('/get-charts', function () {

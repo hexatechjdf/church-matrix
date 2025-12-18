@@ -139,8 +139,16 @@
 @section('content')
 
 
-    @include('locations.components.topbar')
+    @include('locations.components.topbar', [''])
     <div class="p-4">
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <span>
+                Verify whether your account is connected correctly by running a test.
+            </span>
+            <button class="btn btn-sm btn-primary" id="testConnectionBtn">
+                Test Connection
+            </button>
+        </div>
         @php($active = $active ?? null)
         @php($campuses = $campuses ?? null)
         <div class="modules-grid">
@@ -310,6 +318,80 @@
                     }
                 });
             }
+
+        });
+    </script>
+
+    <script>
+        $(document).ready(function() {
+
+            $('#testConnectionBtn').on('click', function() {
+
+                Swal.fire({
+                    title: 'Test Account Connection?',
+                    text: 'This will verify if your Planning Center account is connected correctly.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Test Connection',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#E75037'
+                }).then((result) => {
+
+                    if (!result.value) return;
+
+                    const $btn = $('#testConnectionBtn');
+
+                    $btn.prop('disabled', true).text('Testing...');
+
+                    $.ajax({
+                        url: '{{ route('test.planningcenter.connection') }}',
+                        method: 'GET',
+
+                        success(response) {
+
+                            Swal.fire({
+                                title: 'Connection Successful',
+                                text: response.message ||
+                                    'Your account is connected successfully.',
+                                icon: 'success',
+                                confirmButtonColor: '#E75037'
+                            });
+
+                        },
+
+                        error(xhr) {
+
+                            let response = xhr.responseJSON || {};
+                            let message = response.message ||
+                                'Connection test failed. Please reconnect your account.';
+
+                            if (response.type === 'token_missing') {
+                                Swal.fire({
+                                    title: 'Account Not Connected',
+                                    text: message,
+                                    icon: 'warning',
+                                    confirmButtonText: 'Connect Account',
+                                    confirmButtonColor: '#E75037'
+                                }).then(() => {});
+                                return;
+                            }
+
+                            Swal.fire({
+                                title: 'Connection Failed',
+                                text: message,
+                                icon: 'error',
+                                confirmButtonColor: '#E75037'
+                            });
+                        },
+
+                        complete() {
+                            $btn.prop('disabled', false).text('Test Account Connection');
+                        }
+                    });
+
+                });
+
+            });
 
         });
     </script>
