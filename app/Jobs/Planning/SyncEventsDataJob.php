@@ -101,7 +101,7 @@ class SyncEventsDataJob implements ShouldQueue
         $syncedCount = 0;
 
         Log::info("Syncing User: {$userId}");
-        $planningService->setUserToken($userId,$token);
+        $planningService->setUserToken($userId, $token);
         $response = $this->fetchData($offset, $token, $type, $options, $planningService);
         if (empty($response) || !is_object($response) || empty($response->data)) {
             Log::info("No data received for offset {$offset}");
@@ -140,10 +140,10 @@ class SyncEventsDataJob implements ShouldQueue
         if ($type === 'headcount') {
             $filter = [];
             if ($createdAt = $options['created'] ?? null) {
-                $filter['[created_at]'] = $createdAt.'T00:00:00Z';
+                $filter['[created_at]'] = $createdAt . 'T00:00:00Z';
             }
             if ($updatedAt = $options['updated'] ?? null) {
-                $filter['[updated_at]'] = $updatedAt.'T00:00:00Z';;
+                $filter['[updated_at]'] = $updatedAt . 'T00:00:00Z';;
             }
             return $this->fetchAttendances($offset, $token, $filter, $planningService);
         }
@@ -155,7 +155,7 @@ class SyncEventsDataJob implements ShouldQueue
     {
 
         $url = "check-ins/v2/event_times?include=event,headcounts&per_page=100&offset={$offset}";
-        $response = $planningService->planning_api_call($url, 'get', '', [], false,$token);
+        $response = $planningService->planning_api_call($url, 'get', '', [], false, $token);
 
         return $response ?? (object)[
             'data' => [],
@@ -198,7 +198,7 @@ class SyncEventsDataJob implements ShouldQueue
         return $data;
     }
 
-    private function processHeadcount(object $item, array $events, array $includedMap): array
+    private function processHeadcount(object $item, array $events, Collection $includedMap): array
     {
         $data = [];
         $eventTime = $item->relationships->event_time->data->id;
@@ -219,7 +219,7 @@ class SyncEventsDataJob implements ShouldQueue
         return $data;
     }
 
-    private function processEventTime(object $item, string $userId, string $locationId, array $includedMap): array
+    private function processEventTime(object $item, string $userId, string $locationId, Collection $includedMap): array
     {
         $data = [];
         $eventId = $item->relationships->event->data->id ?? null;
@@ -303,10 +303,19 @@ class SyncEventsDataJob implements ShouldQueue
                 $batch,
                 ['event_time_id', 'headcount_id', 'user_id'],
                 [
-                    'event_id', 'event_name', 'service_name', 'week_reference',
-                    'service_date', 'service_time', 'attendance_id', 'value',
-                    'headcount_type', 'headcount_created_at', 'headcount_updated_at',
-                    'location_id', 'synced_at'
+                    'event_id',
+                    'event_name',
+                    'service_name',
+                    'week_reference',
+                    'service_date',
+                    'service_time',
+                    'attendance_id',
+                    'value',
+                    'headcount_type',
+                    'headcount_created_at',
+                    'headcount_updated_at',
+                    'location_id',
+                    'synced_at'
                 ]
             );
 

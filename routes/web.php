@@ -147,25 +147,6 @@ Route::prefix('church-matrix')->name('church-matrix.')->group(function () {
 
 
 
-Route::get('/charts', [ChartController::class, 'index']);
-Route::get('/charts/data', [ChartController::class, 'getChartData']);
-Route::get('/event-filter', [ChartController::class, 'index']);
-Route::get('/event-filter2', [ChartController::class, 'eventFilter2']);
-
-
-Route::get('/get-filtered-chart-data', [ChartController::class, 'getFilteredChartData']);
-
-Route::get('/get-chart-json', [ChartController::class, 'getApexChartData']);
-Route::get('/get-pie-chart-data', [ChartController::class, 'getPieChartData']);
-
-Route::get('/ruff', [ChartController::class, 'ruff']);
-
-Route::get('/get-chart-json', [ChartController::class, 'getChartJson']);
-
-Route::get('/get-events-chart-data', [ChartController::class, 'getEventsChartData']);
-
-
-
 // Planning Center Connection Routes
 Route::prefix('planning-center')->name('planningcenter.')->group(function () {
     $controller = PlanningController::class;
@@ -188,7 +169,6 @@ Route::get('/get-people', [PlanningController::class, 'getContact'])->name('cont
 
 //     dd($var);
 // });
-
 
 Route::prefix('locations')->name('locations.')->group(function () {
     Route::prefix('churchmatrix')->name('churchmatrix.')->group(function () {
@@ -240,7 +220,6 @@ Route::prefix('locations')->name('locations.')->group(function () {
                 Route::get('/', [StatsController::class, 'index'])->name('index');
                 Route::get('/by/month/', [StatsController::class, 'timesChartData'])->name('month');
                 Route::get('/by/week/', [StatsController::class, 'getWeekStats'])->name('week');
-
             });
         });
     });
@@ -270,9 +249,8 @@ Route::prefix('locations')->name('locations.')->group(function () {
 
         Route::get('/headcounts/visualization', [$c, 'headCountSetting'])->name('visuals');
     });
-
-
 });
+
 
 
 Route::get('/test/eventtimes', [PlanningController::class, 'eventtimes']);
@@ -294,12 +272,11 @@ Route::get('/tokens_renew', [PlanningController::class, 'updateTokens'])->name('
 
 
 Route::get('/get-charts', function () {
-      return view('charts');
+    return view('charts');
 });
 
 use App\Services\PlanningService;
 use App\Models\CrmToken;
-
 
 Route::get('/get-head-counts', function (PlanningService $service) {
     $t = CrmToken::where('id', 9)->first();
@@ -308,7 +285,7 @@ Route::get('/get-head-counts', function (PlanningService $service) {
     $request = new Request();
     $request->merge([
         'user_id' => 883,
-        // agar aur fields chahiye to yahan add kar dein
+
     ]);
     $w = $service->planning_api_call('check-ins/v2/event_times?include=event,headcounts&per_page=50', 'get', '', [], false, $planning);
 
@@ -321,7 +298,7 @@ Route::get('/get-attendance-type', function (PlanningService $service) {
 
     $request = new Request();
     $request->merge([
-      'user_id' => 884,
+        'user_id' => 884,
     ]);
     $w = $service->planning_api_call('check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-11-28', 'get', '', [], false, $planning);
 
@@ -330,4 +307,3 @@ Route::get('/get-attendance-type', function (PlanningService $service) {
 
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-12-01
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[updated_at]=2025-12-01
-
