@@ -1088,6 +1088,9 @@
         loadChart('bar');
       });
 
+
+
+
       $('#barDateRange').on('cancel.daterangepicker', function(ev, picker) {
         $(this).val('');
         loadChart('bar');
