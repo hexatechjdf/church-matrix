@@ -192,26 +192,56 @@ class ChartController extends Controller
             default      => "Type {$id}"
         };
     }
+
     public function getChartJson(Request $request)
     {
         $year = $request->year ?? date('Y');
         $months = $request->months ?? [];
         $eventId = $request->event_id;
         $attendanceId = $request->attendance_id;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
 
-        $query = DB::table('events_data')->whereYear('service_date', $year)->where('value', '>', 0);
+        $query = DB::table('events_data')->where('value', '>', 0);
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('service_date', [$startDate, $endDate]);
+
+            $query->selectRaw("DATE_FORMAT(service_date,'%a, %d, %Y') as label")
+                ->selectRaw("service_date as date")
+                ->selectRaw("service_name")
+                ->selectRaw("SUM(value) as total")
+                ->groupBy('service_date', 'service_name')
+                ->orderBy('service_date');
+
+            \Log::info("Date range filter applied: {$startDate} to {$endDate}");
+        } elseif (!empty($months)) {
+            $query->whereYear('service_date', $year)
+                ->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
+
+            $query->selectRaw("DATE_FORMAT(service_date,'%b') as label")
+                ->selectRaw("service_name")
+                ->selectRaw("SUM(value) as total")
+                ->groupBy(DB::raw("MONTH(service_date)"), 'service_name')
+                ->orderBy(DB::raw("MONTH(service_date)"));
+
+            \Log::info("Month filter applied: " . implode(', ', $months));
+        } else {
+            $query->whereYear('service_date', $year);
+
+            $query->selectRaw("DATE_FORMAT(service_date,'%b') as label")
+                ->selectRaw("service_name")
+                ->selectRaw("SUM(value) as total")
+                ->groupBy(DB::raw("MONTH(service_date)"), 'service_name')
+                ->orderBy(DB::raw("MONTH(service_date)"));
+
+            \Log::info("Default: Full year {$year} (no filters)");
+        }
 
         if ($eventId) $query->where('event_id', $eventId);
         if ($attendanceId) $query->where('attendance_id', $attendanceId);
-        if (!empty($months)) $query->whereIn(DB::raw('MONTH(service_date)'), array_map('intval', $months));
 
-        $rows = $query
-            ->selectRaw("DATE_FORMAT(service_date,'%b') as label")
-            ->selectRaw("service_name")
-            ->selectRaw("SUM(value) as total")
-            ->groupBy(DB::raw("MONTH(service_date)"), 'service_name')
-            ->orderBy(DB::raw("MONTH(service_date)"))
-            ->get();
+        $rows = $query->get();
 
         $labels = $rows->pluck('label')->unique()->values();
         $events = $rows->pluck('service_name')->unique();
@@ -238,7 +268,8 @@ class ChartController extends Controller
                 ->selectRaw('YEAR(service_date) as y')
                 ->distinct()
                 ->orderByDesc('y')
-                ->pluck('y')
+                ->pluck('y'),
+            'filter_type' => $startDate && $endDate ? 'date_range' : ($months ? 'months' : 'yearly')
         ]);
     }
 
@@ -300,7 +331,19 @@ class ChartController extends Controller
         $year = $request->input('year', date('Y'));
         $months = $request->input('months', []);
 
-    $monthNames = ["Jan","Feb","Mar","Apr", "May","Jun", "Jul","Aug", "Sep", "Oct", "Nov", "Dec"
+        $monthNames = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec"
         ];
 
         $userId = 883;
@@ -393,7 +436,19 @@ class ChartController extends Controller
             }
         }
 
-        $monthNames = ["Jan","Feb","Mar","Apr", "May","Jun", "Jul","Aug", "Sep", "Oct", "Nov", "Dec"
+        $monthNames = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec"
         ];
 
         $categories = $monthNames;
