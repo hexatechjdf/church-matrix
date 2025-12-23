@@ -69,11 +69,12 @@ class CRM
                 $loc->location_id = $code->locationId ?? '';
                 $loc->user_type = $type;
                 $loc->company_id = $cmpid;
-                $loc->user_id = $company_id;
+
                 $loc->crm_user_id = $code->user_id ?? '';
             }
-        }
 
+        }
+        $loc->user_id = $company_id;
         $loc->expires_in = $code->expires_in ?? 0;
         $loc->access_token = $code->access_token;
         $loc->refresh_token = $code->refresh_token;
@@ -182,7 +183,7 @@ class CRM
                     "installToFutureLocations" => true
                 ];
             }
-            // dd($locurl);
+
             $red = self::makeCall($locurl, 'POST', $data, [
                 'Authorization: Bearer ' . $token,
                 //'Version: 2021-04-15'
@@ -251,6 +252,7 @@ class CRM
             //$type = $oldtype ?? $type;
             $code = json_decode($code);
         }
+
         //\Log::info(['CCode',$code]);
         if ($code) {
 

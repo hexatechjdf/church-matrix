@@ -132,19 +132,20 @@
         }
 
         var childframe = null;
+        window.addEventListener("message", (e) => {
+            var data = e.data;
+            if (typeof data == 'string' && data == 'planningconnected') {
+                toastr.success("Planning Center Connected successfully!");
+                childframe.close();
+                hideshowplanning();
+                getWorkflows();
+                window.location.reload();
+            }
+        });
 
         function connect(url) {
             childframe = window.open(url, 'childframe', 'width=500,height=500');
-            childframe.addEventListener("message", (e) => {
-                var data = e.data;
-                if (typeof data == 'string' && data == 'planningconnected') {
-                    toastr.success("Planning Center Connected successfully!");
-                    childframe.close();
-                    hideshowplanning();
-                    getWorkflows();
-                    window.location.reload();
-                }
-            });
+
         }
 
         function getWorkflows() {

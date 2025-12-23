@@ -8,11 +8,9 @@
         @include('locations.churchmatrix.components.campusfields')
     @endif
     @include('locations.churchmatrix.components.eventfields')
+    @include('locations.churchmatrix.components.times')
 
-    <div class="mb-3">
-        <label class="form-label fw-bold">Service Time</label>
-        <select name="service_time_id" class="form-control service-time-select" required></select>
-    </div>
+
 @endif
 
 

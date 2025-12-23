@@ -161,7 +161,7 @@
         }
 
         .btn-close {
-            filter: invert(1);
+            /* filter: invert(1); */
         }
 
         .form-label {
@@ -305,6 +305,10 @@
         .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
             color: white !important;
         }
+        .datefield{
+            color: black !important;
+            background: white !important;
+        }
     </style>
 
     @stack('styles')
@@ -323,7 +327,7 @@
                     <div class="chart-header">
                         <h3 class="chart-title">
                             <i class="fa-solid fa-chart-area"></i>
-                            Attendance Over Time
+                            Monthly Attendance Trends Breakdown
                         </h3>
                         <div class="d-flex">
                             <button class="filter-btn mx-3" data-target="#time_chart" data-coly="service_time"
@@ -369,7 +373,7 @@
                     <div class="chart-header">
                         <h3 class="chart-title">
                             <i class="fa-solid fa-chart-pie"></i>
-                            Attendance
+                            This Week's Breakdown
                         </h3>
                         <div class="d-flex">
                             <button class="filter-btn mx-3" data-target="#pie_chart" data-coly="category_name"
@@ -391,7 +395,8 @@
                     <div class="chart-header">
                         <h3 class="chart-title">
                             <i class="fa-solid fa-chart-column"></i>
-                            Category based Comparison
+                            Weekly Report by Category
+
                         </h3>
                         <div class="d-flex">
                             <button class="filter-btn mx-3" data-target="#weekly_chart" data-coly="category_name"
@@ -431,7 +436,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Filter Options</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn btn-danger" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="fetchselect2">
                     <form id="filterForm">
@@ -439,12 +444,20 @@
                         <!-- Date Range -->
                         <div class="mb-3 field-date-range d-none">
                             <label class="fw-bold mb-2">Select Date Range</label>
-                            <input type="text" id="daterange" class="form-control" />
+                            <input type="text" id="daterange" class="form-control datefield" />
+                        </div>
+                        <div class="mb-3 field-week-range d-none">
+                            <label class="fw-bold mb-2">Select Week</label>
+                            <input type="text" id="weekpicker" class="form-control datefield" />
                         </div>
 
                         <!-- Category -->
                         <div class="category_field_area field-category d-none">
                             @include('locations.churchmatrix.components.categoryfield')
+                        </div>
+
+                        <div class="times_field_area field-times d-none">
+                            @include('locations.churchmatrix.components.times')
                         </div>
 
                         <!-- Campus -->
@@ -493,6 +506,42 @@
 
     <script>
         $(function() {
+
+            $('#weekpicker').daterangepicker({
+                singleDatePicker: true, // 👈 only one date click
+                autoApply: true,
+                showDropdowns: true,
+                opens: 'center',
+                parentEl: '#serviceTimeModal',
+                locale: {
+                    format: 'YYYY-MM-DD'
+                }
+            });
+
+            $('#weekpicker').on('apply.daterangepicker', function(ev, picker) {
+
+                let startOfWeek = picker.startDate.clone().startOf('week'); // Sunday
+                let endOfWeek = picker.startDate.clone().endOf('week'); // Saturday
+
+                $(this).val(
+                    startOfWeek.format('YYYY-MM-DD') +
+                    ' - ' +
+                    endOfWeek.format('YYYY-MM-DD')
+                );
+
+                // OPTIONAL: send week data
+                console.log({
+                    week_start: startOfWeek.format('YYYY-MM-DD'),
+                    week_end: endOfWeek.format('YYYY-MM-DD'),
+                    week_number: picker.startDate.week()
+                });
+            });
+
+        });
+    </script>
+
+    <script>
+        $(function() {
             $('#daterange').daterangepicker({
                 autoUpdateInput: false,
                 showDropdowns: true,
@@ -533,19 +582,15 @@
         let serverSideCall = {{ $user->church_admin ? 'false' : 'true' }};
         const filterConfig = {
             time_chart: ['category', 'year', 'month', 'campus'],
-            category_time_chart: ['year', 'month', 'campus'],
-            pie_chart: ['year', 'month', 'campus'],
-            weekly_chart: ['date-range', 'campus']
+            category_time_chart: ['year', 'month', 'campus','times'],
+            pie_chart: ['year', 'month', 'campus','week-range','times'],
+            weekly_chart: ['date-range', 'campus','times']
         };
 
-
-
         function toggleFilterFields(type) {
-            // Hide all fields first
             $('.field-category, .field-year, .field-month, .field-campus, .field-date-range')
                 .addClass('d-none');
 
-            // Show only the fields required for this chart
             (filterConfig[type] || []).forEach(field => {
                 $(`.field-${field}`).removeClass('d-none');
             });
@@ -620,6 +665,7 @@
 
             $('#serviceTimeModal').on('shown.bs.modal', function() {
                 initSelect2("#fetchselect2", "category");
+                initSelect2("#fetchselect2", "service-time");
                 if (!serverSideCall) {
                     initSelect2("#fetchselect2", "campuses");
                 }
@@ -647,6 +693,8 @@
                 months: $('#monthSelect').val() || [],
                 category_id: $('.category-select').val(),
                 campus_id: $('.campus-select').val(),
+                time_id: $('.service-time-select').val(),
+                weekly_date: $('#weekpicker').val(),
                 colx,
                 coly
             }).done(function(res) {
@@ -706,6 +754,8 @@
                 year: $('#yearSelect').val(),
                 months: $('#monthSelect').val() || [],
                 campus_id: $('.campus-select').val(),
+                time_id: $('.service-time-select').val(),
+                weekly_date: $('#weekpicker').val(),
                 colx,
                 coly,
                 chart: 'pie'
@@ -755,6 +805,7 @@
             $.get('{{ route('locations.churchmatrix.integration.stats.week') }}', {
                 daterange,
                 campus: $('.campus-select').val(),
+                time_id: $('.service-time-select').val(),
                 colx,
                 coly
             }).done(function(res) {
@@ -829,4 +880,3 @@
 </body>
 
 </html>
-

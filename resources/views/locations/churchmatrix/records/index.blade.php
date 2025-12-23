@@ -172,10 +172,10 @@
                             data-url="{{ route('locations.churchmatrix.integration.update.records') }}" title="Refresh">
                             <i class="fas fa-sync-alt"></i>
                         </button>
-                        <a class=" btn btn-primary" href="{{ route('locations.churchmatrix.integration.stats.index') }}"
+                        {{-- <a class=" btn btn-primary" href="{{ route('locations.churchmatrix.integration.stats.index') }}"
                             title="Refresh">
                             <i class="fas fa-chart-line"></i> Statistics
-                        </a>
+                        </a> --}}
                     </div>
                 </div>
 
@@ -186,9 +186,11 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th>Record ID</th>
-                                    <th>Week</th>
                                     <th>Service Date</th>
                                     <th>Value</th>
+                                    <th>Year</th>
+                                    <th>Week</th>
+                                    <th>Category</th>
                                     @if ($user->church_admin)
                                     <th>Campus</th>
                                     @endif
@@ -251,16 +253,24 @@
                         name: 'record_unique_id'
                     },
                     {
-                        data: 'week_reference',
-                        name: 'week_reference'
-                    },
-                    {
                         data: 'service_date_time',
                         name: 'service_date_time'
                     },
                     {
                         data: 'value',
                         name: 'value'
+                    },
+                    {
+                        data: 'year',
+                        name: 'year'
+                    },
+                    {
+                        data: 'week_no',
+                        name: 'week_no'
+                    },
+                    {
+                        data: 'category_name',
+                        name: 'category_name'
                     },
                     @if ($user->church_admin)
                         {

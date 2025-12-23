@@ -71,13 +71,12 @@ class PlanningService
             }
 
             $url1 = $baseurl . $url;
-        \Log::info($url1);
-         \Log::info($bearer);
+
 
 
             $response = $client->request($method, $url1, $options);
             $bd = $response->getBody()->getContents();
-              \Log::info([$bd]);
+            //   \Log::info([$bd]);
 
             // Check for access denied
             if (strpos($bd, 'HTTP Basic: Access denied') !== false) {

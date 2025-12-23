@@ -42,8 +42,11 @@ class PlanningController extends Controller
 
             }
             $crm = CrmToken::where('crm_type', 'planning')->where('company_id',$org_id)->where('user_id','<>',$loc_id)->first();
+
             if (!is_null($crm) && $crm) {
-                $user = $crm->user();
+                $user = $crm->user;
+
+                // echo 'Unable to connect Organization already connect with ';
                 echo 'Unable to connect Organization already connect with '.$user->location;
                 die;
             }
@@ -92,7 +95,7 @@ class PlanningController extends Controller
         $res = new \stdClass;
         $res->is_planning = false;
         $c =  $user->planningToken ?? null;
-        $res->planning_href = "https://api.planningcenteronline.com/oauth/authorize?client_id=" . getAccessToken('planning_client_id') . "&redirect_uri=" . route('planningcenter.callback') . "?location_id=" . $user->id . "&response_type=code&scope=people";
+        $res->planning_href = "https://api.planningcenteronline.com/oauth/authorize?client_id=" . getAccessToken('planning_client_id') . "&redirect_uri=" . route('planningcenter.callback') . "?location_id=" . $user->id . "&response_type=code&scope=people check_ins";
         $planning = @$c->access_token;
         if (!empty($planning)) {
             $workflows = $this->planningService->planning_api_call('people/v2/workflows', 'get', '', [], false, $planning);

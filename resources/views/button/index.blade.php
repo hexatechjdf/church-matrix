@@ -5,14 +5,18 @@
      @if ($platform == 'church')
          <a href="{{ route('locations.churchmatrix.index') }}"
              class="btn btn-gradient-success px-4 mt-0 mb-3 import-users {{ request()->routeIs('locations.churchmatrix.index') ? 'active-tab' : '' }}">
-             <i class="mdi mdi-plus-circle-outline mr-2"></i>Setting
+             <i class="mdi mdi-plus-circle-outline mr-2"></i>Settings
          </a>
 
          @if ($churchmatrixbtn)
              <a href="{{ route('locations.churchmatrix.integration.events.index') }}"
                  class="btn btn-gradient-primary px-4 mt-0 mb-3 {{ request()->routeIs('locations.churchmatrix.integration*') ? 'active-tab' : '' }}">
-                 <i class="mdi mdi-plus-circle-outline mr-2"></i>Church Matrix</a>
+                 <i class="mdi mdi-plus-circle-outline mr-2"></i>Church Metrics</a>
          @endif
+
+         <a href="{{ route('locations.churchmatrix.integration.stats.index') }}"
+             class="btn btn-gradient-warning px-4 mt-0 mb-3 {{ request()->routeIs('locations.churchmatrix.integration.stats.index') ? 'active-tab' : '' }}">
+             <i class="mdi mdi-plus-circle-outline mr-2"></i>Reporting</a>
      @else
          @php($user = loginUser())
          <a href="{{ route('locations.planningcenter.index') }}"

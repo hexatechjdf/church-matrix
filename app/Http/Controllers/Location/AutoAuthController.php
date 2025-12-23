@@ -25,7 +25,7 @@ class AutoAuthController extends Controller
 // ->when($t == 'churchmatrix',function($q){
 //                     $q->where('role',0);
 //                 })
-                $user = User::with('crmtoken')->where('location', $req->location)->first();
+                $user = User::with('crmtoken')->where('location', $location)->first();
 
                 if (!$user) {
                     $user = new User();
@@ -49,12 +49,13 @@ class AutoAuthController extends Controller
 
                 $res = new \stdClass;
                 $res->user_id = $user->id;
-                $res->location_id = $user->location_id ?? null;
+                $res->location_id = $user->location ?? null;
                 $res->is_crm = false;
                 request()->user_id = $user->id;
                 $res->token = $user->ghl_api_key;
                 $token = $user->crmtoken;
                 $res->crm_connected = false;
+
                 if ($token) {
                     list($tokenx, $token) = CRM::go_and_get_token($token->refresh_token, 'refresh', $user->id, $token);
                     $res->crm_connected = $tokenx && $token;
@@ -62,6 +63,8 @@ class AutoAuthController extends Controller
                 if (!$res->crm_connected) {
                     $res->crm_connected = CRM::ConnectOauth($req->location, $res->token, false, $user->id);
                 }
+
+                 //dd($res,$token);
 
                 if ($res->crm_connected) {
                     if (Auth::check()) {

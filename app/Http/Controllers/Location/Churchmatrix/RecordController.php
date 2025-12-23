@@ -37,6 +37,10 @@ class RecordController extends Controller
 
             return DataTables::of($records)
                 ->editColumn('service_date_time', fn($r) => Carbon::parse($r->service_date_time)->format('d M Y'))
+                ->editColumn('year', function ($r) {
+                    return explode('_', @$r->week_volume)[0] ?? '';
+                })
+
                 ->make(true);
         }
 
