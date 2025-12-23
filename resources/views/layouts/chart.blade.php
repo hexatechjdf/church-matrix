@@ -10,869 +10,636 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  <link rel="stylesheet" href="{{ asset('css/charts.css') }}">
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
-      min-height: 100vh;
-      padding: 30px 20px;
-      color: #1e293b;
-    }
 
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .header h1 {
-      font-size: 2.8rem;
-      font-weight: 800;
-      background: linear-gradient(90deg, #4f46e5, #7c3aed);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      margin-bottom: 10px;
-    }
-
-    .header p {
-      font-size: 1.2rem;
-      color: #64748b;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(16px);
-      border-radius: 20px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
-      padding: 28px;
-      margin-bottom: 40px;
-      border: 1px solid rgba(139, 92, 246, 0.1);
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      align-items: end;
-      margin-bottom: 25px;
-    }
-
-    label {
-      font-weight: 600;
-      color: #4c1d95;
-      font-size: 0.95rem;
-      margin-bottom: 8px;
-      display: block;
-    }
-
-    select,
-    button {
-      padding: 14px 18px;
-      border-radius: 14px;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-      border: 2px solid #e0e7ff;
-      background: white;
-    }
-
-    select:focus {
-      border-color: #8b5cf6;
-      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25);
-    }
-
-    .select2-container--default .select2-selection--multiple {
-      border: 2px solid #e0e7ff !important;
-      border-radius: 14px !important;
-      min-height: 52px !important;
-      padding: 8px 12px !important;
-      background: white;
-    }
-
-    .select2-container--default.select2-container--focus .select2-selection--multiple {
-      border-color: #8b5cf6 !important;
-      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2) !important;
-    }
-
-    .select2-selection__choice {
-      background: linear-gradient(135deg, #8b5cf6, #a78bfa) !important;
-      color: white !important;
-      border-radius: 12px !important;
-      padding: 6px 12px !important;
-      font-weight: 600 !important;
-    }
-
-    .reset-btn {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      height: 52px;
-    }
-
-    .reset-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
-    }
-
-    .chart-title {
-      text-align: center;
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #4c1d95;
-      margin-bottom: 20px;
-    }
-
-    #pieChart {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    @media (max-width: 768px) {
-      .controls {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
 
 <body>
   @yield('content')
 
   <script>
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const fullMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-    let lineChart = null;
-    let barChart = null;
-    let pieChart = null;
-    let eventsChart = null;
-    let guestChart = null;
-
-    let defaultAttendances = [{
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const FULL_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const ATTENDANCE_TYPES = [{
         id: 'regular',
-        name: 'Regular',
-        type: 'AttendanceType'
+        name: 'Regular'
       },
       {
         id: 'volunteer',
-        name: 'Volunteer',
-        type: 'AttendanceType'
+        name: 'Volunteer'
       },
       {
         id: 'guest',
-        name: 'Guest',
-        type: 'AttendanceType'
+        name: 'Guest'
       }
     ];
 
-    let currentAttendances = {};
-    let eventsObject = {};
+    let lineChart, barChart, pieChart, eventsChart;
+    const eventCache = {};
+    const attendanceCache = {};
 
-    function calculateTotal(seriesData) {
-      const allValues = seriesData.flatMap(s => s.data || []);
-      return allValues.reduce((a, b) => a + b, 0);
-    }
+    const Helpers = {
+      showLoader: (type) => {
+        $(`#${type}ChartLoader`).show();
+        $(`#${type}ChartCard`).addClass('chart-loading');
+      },
 
-    function calculatePieTotal(values) {
-      return values.reduce((a, b) => a + b, 0);
-    }
+      hideLoader: (type) => {
+        $(`#${type}ChartLoader`).hide();
+        $(`#${type}ChartCard`).removeClass('chart-loading');
+      },
 
-    function getEvents(offset) {
-      let url = `{{route('locations.planningcenter.events') }}`;
-      $.get(url + '?offset=' + offset)
-        .done(function(res) {
-          let events = res.data;
+      calculateAverage: (data) => {
+        const values = data.flatMap(s => s.data || []);
+        return values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
+      },
 
-          ['line', 'bar', 'pie', 'guest'].forEach(type => {
-            const $select = $(`#events-${type}`);
-            let allEventsHTML = `<option value="">All Events</option>`;
+      getCurrentYear: () => new Date().getFullYear(),
 
-            for (let event of events) {
-              eventsObject[event.id] = event;
-              currentAttendances[event.id] = event.relationships?.attendance_types?.data.map(t => {
-                return {
+      parseDateRange: (value) => {
+        if (!value || !value.includes(' to ')) return null;
+        const dates = value.split(' to ');
+        return dates.length === 2 ? {
+          start: dates[0].trim(),
+          end: dates[1].trim()
+        } : null;
+      }
+    };
+
+    const EventManager = {
+      loadEvents: (offset = 0) => {
+        const url = `{{ route('locations.planningcenter.events') }}?offset=${offset}`;
+
+        $.get(url)
+          .done(res => {
+            const events = res.data || [];
+
+            events.forEach(event => {
+              eventCache[event.id] = event;
+
+              if (event.relationships?.attendance_types?.data) {
+                attendanceCache[event.id] = event.relationships.attendance_types.data.map(t => ({
                   ...t,
-                  ...res.included[t.type + '.' + t.id]?.attributes
-                };
+                  ...(res.included?.[`${t.type}.${t.id}`]?.attributes || {})
+                }));
+              }
+            });
+
+            ['line', 'bar', 'pie'].forEach(type => {
+              const $select = $(`#events-${type}`);
+              let html = '<option value="">All Events</option>';
+
+              events.forEach(event => {
+                html += `<option value="${event.id}">${event.attributes.name}</option>`;
               });
-              allEventsHTML += `<option value="${event.id}">${event.attributes.name}</option>`;
-            }
-            $select.html(allEventsHTML);
-          });
 
-        }).fail(function(res) {
-          console.error('Failed to load events:', res);
-        });
-    }
+              $select.html(html);
+            });
+          })
+          .fail(console.error);
+      },
 
-    function addAttendanceTypes(selector, eventId = '') {
-      const $select = $(selector);
-      let html = `<option value="">All Types</option>`;
+      getAttendanceTypes: (eventId = '') => {
+        let types = [...ATTENDANCE_TYPES];
 
-      defaultAttendances.forEach(type => {
-        html += `<option value="${type.id}">${type.name}</option>`;
-      });
+        if (eventId && attendanceCache[eventId]) {
+          types = [...types, ...attendanceCache[eventId].map(t => ({
+            id: t.id,
+            name: t.name || t.id
+          }))];
+        }
 
-      if (eventId && currentAttendances[eventId]) {
-        currentAttendances[eventId].forEach(type => {
+        return types;
+      },
+
+      updateAttendanceDropdown: (selector, eventId = '') => {
+        const $select = $(selector);
+        const types = EventManager.getAttendanceTypes(eventId);
+
+        let html = '<option value="">All Types</option>';
+        types.forEach(type => {
           html += `<option value="${type.id}">${type.name}</option>`;
         });
+
+        $select.html(html);
+      }
+    };
+
+    const ChartConfig = {
+      line: {
+        yearSelect: '#lineYearSelect',
+        monthSelect: '#lineMonthSelect',
+        dateRange: '#lineDateRange',
+        endpoint: '{{ route("locations.planningcenter.chart.json") }}'
+      },
+      bar: {
+        yearSelect: '#barYearSelect',
+        monthSelect: '#barMonthSelect',
+        dateRange: '#barDateRange',
+        endpoint: '{{ route("locations.planningcenter.chart.json") }}'
+      },
+      pie: {
+        yearSelect: '#pieYearSelect',
+        endpoint: '{{ route("locations.planningcenter.pie.chart.data") }}'
+      },
+      events: {
+        yearSelect: '#eventsYearSelect',
+        endpoint: '{{ route("locations.planningcenter.events.chart.data") }}'
+      }
+    };
+
+    async function loadChart(type) {
+      Helpers.showLoader(type);
+
+      const config = ChartConfig[type];
+      if (!config) {
+        console.error('Invalid chart type:', type);
+        Helpers.hideLoader(type);
+        return;
       }
 
-      $select.html(html);
+      const params = buildChartParams(type, config);
+
+      try {
+        const response = await $.get(config.endpoint, params);
+        handleChartResponse(type, response, params);
+      } catch (error) {
+        console.error(`Error loading ${type} chart:`, error);
+        handleChartError(type);
+      } finally {
+        Helpers.hideLoader(type);
+      }
     }
 
-    $('body').on('change', '[id^="events-"]', function() {
-      const eventId = $(this).val();
-      const panel = $(this).closest('.card');
-      const attSelect = panel.find('[id^="attendanceType-"]');
+    function buildChartParams(type, config) {
+      const year = $(config.yearSelect).val() || Helpers.getCurrentYear();
+      const panel = $(config.yearSelect).closest('.card');
 
-      if (attSelect.length) {
-        addAttendanceTypes(attSelect, eventId);
-      }
-
-      if (panel.find('#lineChart').length) loadChart('line');
-      if (panel.find('#barChart').length) loadChart('bar');
-      if (panel.find('#pieChart').length) loadChart('pie');
-    });
-
-    $('body').on('change', '[id^="attendanceType-"]', function() {
-      const panel = $(this).closest('.card');
-      if (panel.find('#lineChart').length) loadChart('line');
-      if (panel.find('#barChart').length) loadChart('bar');
-    });
-
-    function loadChart(chartType) {
-      let yearSelect, monthSelect, endpoint;
-      let total, count;
-
-      if (chartType === 'line') {
-        yearSelect = '#lineYearSelect';
-        monthSelect = '#lineMonthSelect';
-        endpoint = '{{ route("locations.planningcenter.chart.json") }}';
-      } else if (chartType === 'bar') {
-        yearSelect = '#barYearSelect';
-        monthSelect = '#barMonthSelect';
-        endpoint = '{{ route("locations.planningcenter.chart.json") }}';
-      } else if (chartType === 'pie') {
-        yearSelect = '#pieYearSelect';
-        monthSelect = null;
-        endpoint = '{{ route("locations.planningcenter.pie.chart.data") }}';
-      } else if (chartType === 'events') {
-        yearSelect = '#eventsYearSelect';
-        monthSelect = null;
-        endpoint = '{{ route("locations.planningcenter.events.chart.data") }}';
-      } else if (chartType === 'guest') {
-        yearSelect = '#guestYearSelect';
-        monthSelect = '#guestMonthSelect';
-        endpoint = '{{ route("locations.planningcenter.guest.chart.data") }}';
-      }
-
-      const year = $(yearSelect).val() || new Date().getFullYear();
-      const months = monthSelect ? $(monthSelect).val() : null;
-
-      const panel = $(yearSelect).closest('.card');
-      let eventId = '',
-        attendanceId = '';
-
-      if (chartType === 'pie') {
-        eventId = panel.find('[id^="events-"]').val();
-        const attSelect = panel.find('[id^="attendanceType-"]');
-        if (attSelect.length) {
-          attendanceId = attSelect.val();
-        }
-      } else if (chartType !== 'events' && chartType !== 'guest') {
-        eventId = panel.find('[id^="events-"]').val();
-        attendanceId = panel.find('[id^="attendanceType-"]').val();
-      }
-
-      console.log(`Loading ${chartType} chart:`, {
-        year: year,
-        months: months,
-        event_id: eventId,
-        attendance_id: attendanceId
-      });
-
-      let params = {
-        year: year
+      const params = {
+        year
       };
 
-      if (months && monthSelect) {
-        params.months = months;
+      if (config.dateRange) {
+        const dateRange = Helpers.parseDateRange($(config.dateRange).val());
+        if (dateRange) {
+          params.start_date = dateRange.start;
+          params.end_date = dateRange.end;
+        }
       }
 
-      if (eventId && endpoint !== '{{ route("locations.planningcenter.events.chart.data") }}') {
-        params.event_id = eventId;
+      if (config.monthSelect && $(config.monthSelect).val()?.length) {
+        params.months = $(config.monthSelect).val();
       }
 
-      if (attendanceId && chartType !== 'guest') {
-        params.attendance_id = attendanceId;
+      if (type !== 'events') {
+        const eventId = panel.find('[id^="events-"]').val();
+        if (eventId) params.event_id = eventId;
+
+        if (type !== 'pie') {
+          const attendanceId = panel.find('[id^="attendanceType-"]').val();
+          if (attendanceId) params.attendance_id = attendanceId;
+        }
       }
 
-      $.get(endpoint, params)
-        .done(function(res) {
-          console.log(`${chartType} chart response:`, res);
-
-          if (res.available_years || res.years) {
-            $(yearSelect).empty();
-            (res.available_years || res.years || []).forEach(y => {
-              $(yearSelect).append(`<option value="${y}" ${y == year ? 'selected' : ''}>${y}</option>`);
-            });
-          }
-
-          if (chartType === 'pie') {
-            total = res.values.reduce((a, b) => a + b, 0);
-            count = res.values.length || 1;
-            $(`#pieAvg`).text(`Average Attendance: ${Math.round(total / count)}`);
-
-            if (!res.values || res.values.length === 0 || res.values.every(v => v === 0)) {
-              res.labels = ['Regular', 'Guest', 'Volunteer'];
-              res.values = [2847, 1022, 2009];
-            }
-
-            const totalAttendees = res.values.reduce((a, b) => a + b, 0);
-
-            if (pieChart) {
-              pieChart.destroy();
-              pieChart = null;
-            }
-
-            const options = {
-              chart: {
-                type: 'pie',
-                height: 500
-              },
-              series: res.values,
-              labels: res.labels,
-              title: {
-                text: ``,
-                align: 'center',
-                style: {
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  color: '#4c1d95'
-                }
-              },
-              legend: {
-                position: 'top'
-              },
-              dataLabels: {
-                enabled: true,
-                formatter: function(val) {
-                  return Math.round(val) + '%';
-                }
-              },
-              tooltip: {
-                y: {
-                  formatter: function(val) {
-                    return val.toLocaleString() + ' attendees';
-                  }
-                },
-                footer: {
-                  formatter: function() {
-                    return '<div style="text-align:center; margin-top:8px; font-weight:bold;">Total: ' + totalAttendees.toLocaleString() + ' attendees</div>';
-                  }
-                }
-              },
-              colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']
-            };
-
-            pieChart = new ApexCharts(document.getElementById('pieChart'), options);
-            pieChart.render();
-
-          } else if (chartType === 'events') {
-            if (!res.series || res.series.length === 0) {
-              const options = {
-                chart: {
-                  type: 'bar',
-                  height: 400,
-                  stacked: true,
-                  toolbar: {
-                    show: true
-                  }
-                },
-                series: [],
-                xaxis: {
-                  categories: []
-                },
-                title: {
-                  text: ``,
-                  align: 'center',
-                  style: {
-                    fontSize: '18px',
-                    color: '#4c1d95'
-                  }
-                },
-                noData: {
-                  text: 'No data available',
-                  align: 'center',
-                  verticalAlign: 'middle'
-                }
-              };
-
-              if (eventsChart) {
-                eventsChart.updateOptions(options);
-                eventsChart.updateSeries([]);
-              } else {
-                eventsChart = new ApexCharts(document.getElementById('eventsChart'), options);
-                eventsChart.render();
-              }
-              return;
-            }
-
-            const eventsTotal = res.series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
-            const eventCount = res.series.length || 1;
-            const eventsAvg = Math.round(eventsTotal / eventCount);
-
-            $(`#eventsAvg`).text(`Average per Event: ${eventsAvg}`);
-
-            const eventNames = res.series.map(s => s.name);
-            const monthSeries = fullMonthNames.map((month, monthIndex) => {
-              const monthData = eventNames.map(eventName => {
-                const seriesItem = res.series.find(s => s.name === eventName);
-                return seriesItem ? (seriesItem.data[monthIndex] || 0) : 0;
-              });
-
-              return {
-                name: month,
-                data: monthData
-              };
-            });
-
-            const options = {
-              chart: {
-                type: 'bar',
-                height: Math.max(600, eventNames.length * 40),
-                stacked: true,
-                toolbar: {
-                  show: true
-                }
-              },
-              plotOptions: {
-                bar: {
-                  horizontal: true,
-                  borderRadius: 8
-                }
-              },
-              series: monthSeries,
-              xaxis: {
-                categories: eventNames,
-                title: {
-                  text: 'Attendance'
-                },
-                labels: {
-                  rotate: -45,
-                  style: {
-                    fontSize: '12px'
-                  }
-                }
-              },
-              yaxis: {
-                title: {
-                  text: 'Months'
-                }
-              },
-              title: {
-                text: ``,
-                align: 'center',
-                style: {
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  color: '#4c1d95'
-                }
-              },
-              legend: {
-                position: 'top'
-              },
-              tooltip: {
-                y: {
-                  formatter: function(val) {
-                    return val.toLocaleString() + ' attendees';
-                  }
-                }
-              },
-              dataLabels: {
-                enabled: true
-              },
-              colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2', '#F5576C', '#43AA8B']
-            };
-
-            if (eventsChart) {
-              eventsChart.updateOptions(options);
-              eventsChart.updateSeries(monthSeries);
-            } else {
-              eventsChart = new ApexCharts(document.getElementById('eventsChart'), options);
-              eventsChart.render();
-            }
-
-          } else if (chartType === 'guest') {
-            if (!res.series || res.series.length === 0) {
-              const options = {
-                chart: {
-                  type: 'bar',
-                  height: 400,
-                  stacked: false,
-                  toolbar: {
-                    show: true
-                  }
-                },
-                series: [],
-                xaxis: {
-                  categories: []
-                },
-                title: {
-                  text: `${year} - No Guest Data`,
-                  align: 'center',
-                  style: {
-                    fontSize: '18px',
-                    color: '#4c1d95'
-                  }
-                },
-                noData: {
-                  text: 'No guest data available',
-                  align: 'center',
-                  verticalAlign: 'middle'
-                }
-              };
-
-              if (guestChart) {
-                guestChart.updateOptions(options);
-                guestChart.updateSeries([]);
-              } else {
-                guestChart = new ApexCharts(document.getElementById('guestChart'), options);
-                guestChart.render();
-              }
-              return;
-            }
-
-            const totalGuests = res.series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
-            const monthCount = months ? months.length : 12;
-            const avgGuests = monthCount > 0 ? Math.round(totalGuests / monthCount) : 0;
-
-            $(`#guestAvg`).text(`Average Monthly Guests: ${avgGuests}`);
-
-            const eventNames = res.series.map(s => s.name);
-            const monthSeries = (res.categories || monthNames).map((month, monthIndex) => {
-              const monthData = eventNames.map(eventName => {
-                const seriesItem = res.series.find(s => s.name === eventName);
-                return seriesItem ? (seriesItem.data[monthIndex] || 0) : 0;
-              });
-
-              return {
-                name: month,
-                data: monthData
-              };
-            });
-
-            const options = {
-              chart: {
-                type: 'bar',
-                height: Math.max(600, eventNames.length * 40),
-                stacked: false,
-                toolbar: {
-                  show: true
-                }
-              },
-              plotOptions: {
-                bar: {
-                  horizontal: true,
-                  borderRadius: 8,
-                  columnWidth: '70%'
-                }
-              },
-              series: monthSeries,
-              xaxis: {
-                categories: eventNames,
-                title: {
-                  text: 'Guest Count'
-                },
-                labels: {
-                  rotate: -45,
-                  style: {
-                    fontSize: '12px'
-                  }
-                }
-              },
-              yaxis: {
-                title: {
-                  text: 'Months'
-                }
-              },
-              title: {
-                text: ``,
-                align: 'center',
-                style: {
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  color: '#4c1d95'
-                }
-              },
-              legend: {
-                position: 'top',
-                onItemClick: {
-                  toggleDataSeries: true
-                }
-              },
-              tooltip: {
-                y: {
-                  formatter: function(val) {
-                    return val.toLocaleString() + ' guests';
-                  }
-                }
-              },
-              dataLabels: {
-                enabled: true,
-                formatter: function(val) {
-                  return val > 0 ? val.toLocaleString() : '';
-                }
-              },
-              colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#DDA0DD'],
-              stroke: {
-                show: true,
-                width: 2,
-                colors: ['transparent']
-              },
-              fill: {
-                opacity: 1
-              }
-            };
-
-            if (guestChart) {
-              guestChart.updateOptions(options);
-              guestChart.updateSeries(monthSeries);
-            } else {
-              guestChart = new ApexCharts(document.getElementById('guestChart'), options);
-              guestChart.render();
-            }
-
-          } else {
-            // Line and Bar charts
-            const series = (res.series || []).map(item => ({
-              name: item.name,
-              data: item.data
-            }));
-
-            let chartTitle = ``;
-
-            if (eventId) {
-              const eventName = panel.find('[id^="events-"] option:selected').text();
-              chartTitle += ` (${eventName})`;
-            }
-            if (attendanceId) {
-              const attName = panel.find('[id^="attendanceType-"] option:selected').text();
-              chartTitle += ` - ${attName}`;
-            }
-
-            if (chartType === 'line') {
-              const lineTotal = series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
-              const monthCount = months ? months.length : 12;
-              const lineAvg = monthCount > 0 ? Math.round(lineTotal / monthCount) : 0;
-
-              $(`#lineAvg`).text(`Average Monthly: ${lineAvg}`);
-
-              const options = {
-                chart: {
-                  type: 'area',
-                  height: 500,
-                  toolbar: {
-                    show: true
-                  }
-                },
-                series,
-                stroke: {
-                  curve: 'smooth',
-                  width: 4
-                },
-                fill: {
-                  opacity: 0.6,
-                  type: 'gradient'
-                },
-                xaxis: {
-                  categories: res.categories || []
-                },
-                yaxis: {
-                  title: {
-                    text: 'Attendance'
-                  }
-                },
-                title: {
-                  text: chartTitle,
-                  align: 'center',
-                  style: {
-                    fontSize: '20px',
-                    color: '#4c1d95'
-                  }
-                },
-                legend: {
-                  position: 'top'
-                },
-                colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#f97316']
-              };
-
-              if (lineChart) {
-                lineChart.updateOptions({
-                  series,
-                  xaxis: {
-                    categories: res.categories || []
-                  },
-                  title: {
-                    text: options.title.text
-                  }
-                });
-              } else {
-                lineChart = new ApexCharts(document.getElementById('lineChart'), options);
-                lineChart.render();
-              }
-
-            } else if (chartType === 'bar') {
-              const barTotal = series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
-              const barMonthCount = months ? months.length : 12;
-              const barAvg = barMonthCount > 0 ? Math.round(barTotal / barMonthCount) : 0;
-
-              $(`#barAvg`).text(`Average Monthly: ${barAvg}`);
-
-              const options = {
-                chart: {
-                  type: 'bar',
-                  height: 600,
-                  stacked: true,
-                  toolbar: {
-                    show: true
-                  }
-                },
-                plotOptions: {
-                  bar: {
-                    horizontal: true,
-                    borderRadius: 8
-                  }
-                },
-                series,
-                xaxis: {
-                  categories: res.categories || [],
-                  title: {
-                    text: 'Attendance'
-                  }
-                },
-                yaxis: {
-                  title: {
-                    text: 'Month'
-                  }
-                },
-                title: {
-                  text: chartTitle,
-                  align: 'center',
-                  style: {
-                    fontSize: '20px',
-                    color: '#4c1d95'
-                  }
-                },
-                legend: {
-                  position: 'top'
-                },
-                tooltip: {
-                  y: {
-                    formatter: val => val.toLocaleString() + ' attendees'
-                  }
-                },
-                dataLabels: {
-                  enabled: true
-                },
-                colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1', '#ec4899', '#f97316']
-              };
-
-              if (barChart) {
-                barChart.updateOptions({
-                  series,
-                  xaxis: {
-                    categories: res.categories || []
-                  },
-                  title: {
-                    text: options.title.text
-                  }
-                });
-              } else {
-                barChart = new ApexCharts(document.getElementById('barChart'), options);
-                barChart.render();
-              }
-            }
-          }
-        })
-        .fail(function(jqXHR, textStatus, errorThrown) {
-          console.error(`Error loading ${chartType} chart:`, textStatus, errorThrown);
-
-          if (chartType === 'pie') {
-            $(`#pieAvg`).text('Error loading data');
-            const options = {
-              chart: {
-                type: 'pie',
-                height: 500
-              },
-              series: [1],
-              labels: ['Error Loading Data'],
-              title: {
-                text: 'Error',
-                align: 'center',
-                style: {
-                  fontSize: '20px',
-                  color: '#ff0000'
-                }
-              },
-              legend: {
-                position: 'bottom'
-              }
-            };
-
-            if (pieChart) {
-              pieChart.updateOptions(options);
-              pieChart.updateSeries([1]);
-            } else {
-              pieChart = new ApexCharts(document.getElementById('pieChart'), options);
-              pieChart.render();
-            }
-          } else if (chartType === 'guest') {
-            $(`#guestAvg`).text('Error loading data');
-          } else if (chartType === 'events') {
-            $(`#eventsAvg`).text('Error loading data');
-          } else if (chartType === 'line') {
-            $(`#lineAvg`).text('Error loading data');
-          } else if (chartType === 'bar') {
-            $(`#barAvg`).text('Error loading data');
-          }
-        });
+      return params;
     }
 
-    $('#lineMonthSelect, #barMonthSelect, #guestMonthSelect').each(function() {
-      $(this).select2({
-        placeholder: "All months",
-        allowClear: true,
-        width: '100%'
+    function handleChartResponse(type, response, params) {
+      const years = response.available_years || response.years || [];
+      if (years.length) {
+        const $select = $(`#${type}YearSelect`);
+        const currentVal = $select.val();
+        $select.empty();
+        years.forEach(y => {
+          $select.append(`<option value="${y}" ${y == currentVal ? 'selected' : ''}>${y}</option>`);
+        });
+      }
+
+      switch (type) {
+        case 'pie':
+          renderPieChart(response);
+          break;
+        case 'events':
+          renderEventsChart(response);
+          break;
+        case 'line':
+          renderLineChart(response, params);
+          break;
+        case 'bar':
+          renderBarChart(response, params);
+          break;
+      }
+    }
+
+    function handleChartError(type) {
+      const avgText = type === 'pie' ? 'Average Attendance: 0' :
+        type === 'events' ? 'Average per Event: 0' : 'Average: 0';
+
+      $(`#${type}Avg`).text(avgText);
+
+      if (type === 'pie') {
+        renderEmptyPieChart();
+      }
+    }
+
+    function renderPieChart(data) {
+      const values = data.values || [];
+      const labels = data.labels || [];
+      const total = values.reduce((a, b) => a + b, 0);
+      const avg = values.length ? Math.round(total / values.length) : 0;
+
+      $(`#pieAvg`).text(`Average Attendance: ${avg}`);
+
+      const finalValues = values.length && !values.every(v => v === 0) ? values : [2847, 1022, 2009];
+      const finalLabels = labels.length ? labels : ['Regular', 'Guest', 'Volunteer'];
+
+      const options = {
+        chart: {
+          type: 'pie',
+          height: 500
+        },
+        series: finalValues,
+        labels: finalLabels,
+        colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+        legend: {
+          position: 'top'
+        },
+        dataLabels: {
+          enabled: true,
+          formatter: val => Math.round(val) + '%'
+        },
+        tooltip: {
+          y: {
+            formatter: val => `${val.toLocaleString()} attendees`
+          },
+          footer: {
+            formatter: () => `<div style="text-align:center; margin-top:8px; font-weight:bold;">
+              Total: ${finalValues.reduce((a, b) => a + b, 0).toLocaleString()} attendees</div>`
+          }
+        }
+      };
+
+      if (pieChart) pieChart.destroy();
+      pieChart = new ApexCharts(document.getElementById('pieChart'), options);
+      pieChart.render();
+    }
+
+    function renderEventsChart(data) {
+      if (!data.series || !data.series.length) {
+        $(`#eventsAvg`).text('Average per Event: 0');
+
+        if (eventsChart) {
+          eventsChart.updateSeries([]);
+        } else {
+          eventsChart = new ApexCharts(document.getElementById('eventsChart'), {
+            chart: {
+              type: 'bar',
+              height: 400
+            },
+            series: [],
+            noData: {
+              text: 'No data available'
+            }
+          });
+          eventsChart.render();
+        }
+        return;
+      }
+
+      const eventNames = data.series.map(s => s.name);
+      const totalEvents = data.series.reduce((sum, s) => sum + (s.data?.reduce((a, b) => a + b, 0) || 0), 0);
+      const avgPerEvent = Math.round(totalEvents / data.series.length);
+
+      $(`#eventsAvg`).text(`Average per Event: ${avgPerEvent}`);
+
+      const monthSeries = FULL_MONTHS.map((monthName, monthIndex) => {
+        const monthData = eventNames.map(eventName => {
+          const eventSeries = data.series.find(s => s.name === eventName);
+          return eventSeries?.data?.[monthIndex] || 0;
+        });
+
+        return {
+          name: monthName,
+          data: monthData
+        };
       });
-      fullMonthNames.forEach((m, i) => $(this).append(new Option(m, i + 1)));
-    });
+
+      const options = {
+        chart: {
+          type: 'bar',
+          height: Math.max(500, eventNames.length * 30),
+          stacked: true
+        },
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            borderRadius: 8
+          }
+        },
+        series: monthSeries,
+        xaxis: {
+          categories: eventNames,
+          labels: {
+            rotate: -45,
+            style: {
+              fontSize: '12px'
+            }
+          }
+        },
+        yaxis: {
+          title: {
+            text: 'Months'
+          }
+        },
+        legend: {
+          position: 'top'
+        },
+        tooltip: {
+          y: {
+            formatter: val => `${val.toLocaleString()} attendees`
+          }
+        },
+        colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+          '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+          '#F5576C', '#43AA8B'
+        ]
+      };
+
+      if (eventsChart) {
+        eventsChart.updateOptions(options);
+        eventsChart.updateSeries(monthSeries);
+      } else {
+        eventsChart = new ApexCharts(document.getElementById('eventsChart'), options);
+        eventsChart.render();
+      }
+    }
+
+    function renderLineChart(data, params) {
+      const series = (data.series || []).map(s => ({
+        name: s.name,
+        data: s.data
+      }));
+      const categories = data.categories || [];
+
+      const total = series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
+      const dataPoints = categories.length || (params.months?.length || 12);
+      const avg = dataPoints ? Math.round(total / dataPoints) : 0;
+
+      $(`#lineAvg`).text(`Average: ${avg}`);
+
+      const options = {
+        chart: {
+          type: 'area',
+          height: 500
+        },
+        series,
+        xaxis: {
+          categories
+        },
+        colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+        stroke: {
+          curve: 'smooth',
+          width: 4
+        },
+        fill: {
+          opacity: 0.6,
+          type: 'gradient'
+        },
+        tooltip: {
+          y: {
+            formatter: val => `${val.toLocaleString()} attendees`
+          }
+        }
+      };
+
+      if (lineChart) {
+        lineChart.updateOptions(options);
+        lineChart.updateSeries(series);
+      } else {
+        lineChart = new ApexCharts(document.getElementById('lineChart'), options);
+        lineChart.render();
+      }
+    }
+
+    function renderBarChart(data, params) {
+      const series = (data.series || []).map(s => ({
+        name: s.name,
+        data: s.data
+      }));
+      const categories = data.categories || [];
+
+      const total = series.flatMap(s => s.data).reduce((a, b) => a + b, 0);
+      const dataPoints = categories.length || (params.months?.length || 12);
+      const avg = dataPoints ? Math.round(total / dataPoints) : 0;
+
+      $(`#barAvg`).text(`Average: ${avg}`);
+
+      const options = {
+        chart: {
+          type: 'bar',
+          height: 600,
+          stacked: true
+        },
+        series,
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            borderRadius: 8
+          }
+        },
+        xaxis: {
+          categories
+        },
+        colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+        tooltip: {
+          y: {
+            formatter: val => `${val.toLocaleString()} attendees`
+          }
+        },
+        dataLabels: {
+          enabled: true
+        }
+      };
+
+      if (barChart) {
+        barChart.updateOptions(options);
+        barChart.updateSeries(series);
+      } else {
+        barChart = new ApexCharts(document.getElementById('barChart'), options);
+        barChart.render();
+      }
+    }
+
+    function renderEmptyPieChart() {
+      const options = {
+        chart: {
+          type: 'pie',
+          height: 500
+        },
+        series: [1],
+        labels: ['No Data'],
+        colors: ['#e0e7ff'],
+        legend: {
+          position: 'bottom'
+        }
+      };
+
+      if (pieChart) pieChart.destroy();
+      pieChart = new ApexCharts(document.getElementById('pieChart'), options);
+      pieChart.render();
+    }
 
     $(document).ready(function() {
-      getEvents(0);
+      ['line', 'bar', 'pie', 'events'].forEach(type => Helpers.hideLoader(type));
+
+      $('#lineMonthSelect, #barMonthSelect').each(function() {
+        $(this).select2({
+          placeholder: "All months",
+          allowClear: true,
+          width: '100%'
+        }).html(FULL_MONTHS.map((m, i) => `<option value="${i + 1}">${m}</option>`).join(''));
+      });
+
+      $('.tab-btn').on('click', function() {
+        const tabId = $(this).data('tab');
+        $('.tab-btn, .tab-content').removeClass('active');
+        $(this).addClass('active');
+        $(`#${tabId}`).addClass('active');
+
+        if (tabId === 'months-tab') {
+          $('#lineDateRange').val('');
+        } else if (tabId === 'date-range-tab') {
+          $('#lineMonthSelect').val(null).trigger('change');
+        }
+
+        loadChart('line');
+      });
+
+      function initDateRangePicker(selector, chartType) {
+        $(selector).daterangepicker({
+          autoUpdateInput: false,
+          showDropdowns: true,
+          opens: 'center',
+          ranges: {
+            'Today': [moment(), moment()],
+            'This Week': [moment().startOf('week'), moment().endOf('week')],
+            'This Month': [moment().startOf('month'), moment().endOf('month')],
+            'This Year': [moment().startOf('year'), moment().endOf('year')],
+            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+            'Last 30 Days': [moment().subtract(29, 'days'), moment()]
+          },
+          locale: {
+            format: 'YYYY-MM-DD',
+            cancelLabel: 'Clear',
+            applyLabel: 'Apply'
+          }
+        }).on('apply.daterangepicker', function(ev, picker) {
+          $(this).val(`${picker.startDate.format('YYYY-MM-DD')} to ${picker.endDate.format('YYYY-MM-DD')}`);
+
+          if (chartType === 'line' && $(this).val()) {
+            $('.tab-btn, .tab-content').removeClass('active');
+            $('[data-tab="date-range-tab"]').addClass('active');
+            $('#date-range-tab').addClass('active');
+            $('#lineMonthSelect').val(null).trigger('change');
+          }
+
+          loadChart(chartType);
+        }).on('cancel.daterangepicker', function() {
+          $(this).val('');
+          loadChart(chartType);
+        });
+      }
+
+      initDateRangePicker('#lineDateRange', 'line');
+      initDateRangePicker('#barDateRange', 'bar');
+
+      $('body')
+        .on('change', '[id^="events-"]', function() {
+          const eventId = $(this).val();
+          const panel = $(this).closest('.card');
+          const attSelect = panel.find('[id^="attendanceType-"]');
+
+          if (attSelect.length) {
+            EventManager.updateAttendanceDropdown(attSelect, eventId);
+          }
+
+          const chartType = $(this).attr('id').split('-')[1];
+          if (chartType) loadChart(chartType);
+        })
+        .on('change', '[id^="attendanceType-"]', function() {
+          const panel = $(this).closest('.card');
+          const chartType = $(this).attr('id').split('-')[1];
+          if (chartType) loadChart(chartType);
+        });
+
+      function createResetHandler(type, options = {}) {
+        return function() {
+          if (options.yearSelect) $(options.yearSelect).val(Helpers.getCurrentYear());
+          if (options.monthSelect) $(options.monthSelect).val(null).trigger('change');
+          if (options.dateRange) $(options.dateRange).val('');
+          if (options.eventSelect) $(options.eventSelect).val('');
+          if (options.attendanceSelect) $(options.attendanceSelect).val('');
+
+          if (options.tabReset && type === 'line') {
+            $('.tab-btn, .tab-content').removeClass('active');
+            $('[data-tab="months-tab"]').addClass('active');
+            $('#months-tab').addClass('active');
+          }
+
+          if (options.updateAttendance) {
+            EventManager.updateAttendanceDropdown(options.updateAttendance);
+          }
+
+          loadChart(type);
+        };
+      }
+
+      $('#lineResetBtn').on('click', createResetHandler('line', {
+        yearSelect: '#lineYearSelect',
+        monthSelect: '#lineMonthSelect',
+        dateRange: '#lineDateRange',
+        eventSelect: '#events-line',
+        attendanceSelect: '#attendanceType-line',
+        tabReset: true,
+        updateAttendance: '#attendanceType-line'
+      }));
+
+      $('#barResetBtn').on('click', createResetHandler('bar', {
+        yearSelect: '#barYearSelect',
+        monthSelect: '#barMonthSelect',
+        dateRange: '#barDateRange',
+        eventSelect: '#events-bar',
+        attendanceSelect: '#attendanceType-bar',
+        updateAttendance: '#attendanceType-bar'
+      }));
+
+      $('#pieResetBtn').on('click', createResetHandler('pie', {
+        yearSelect: '#pieYearSelect',
+        eventSelect: '#events-pie'
+      }));
+
+      $('#eventsResetBtn').on('click', createResetHandler('events', {
+        yearSelect: '#eventsYearSelect'
+      }));
+
+      $('#lineYearSelect, #lineMonthSelect').on('change', () => loadChart('line'));
+      $('#barYearSelect, #barMonthSelect').on('change', () => loadChart('bar'));
+      $('#pieYearSelect').on('change', () => loadChart('pie'));
+      $('#eventsYearSelect').on('change', () => loadChart('events'));
+
+      EventManager.loadEvents();
 
       setTimeout(() => {
         ['line', 'bar'].forEach(type => {
-          const attSelect = $(`#attendanceType-${type}`);
-          if (attSelect.length) {
-            addAttendanceTypes(attSelect);
+          const selector = `#attendanceType-${type}`;
+          if ($(selector).length) {
+            EventManager.updateAttendanceDropdown(selector);
           }
         });
 
@@ -881,52 +648,10 @@
           loadChart('bar');
           loadChart('pie');
           loadChart('events');
-          loadChart('guest');
         }, 1000);
       }, 500);
     });
-
-    $('#lineYearSelect, #lineMonthSelect').on('change', () => loadChart('line'));
-    $('#lineResetBtn').on('click', () => {
-      $('#lineYearSelect').val(new Date().getFullYear());
-      $('#lineMonthSelect').val(null).trigger('change');
-      $('#events-line').val('');
-      $('#attendanceType-line').val('');
-      addAttendanceTypes('#attendanceType-line');
-      loadChart('line');
-    });
-
-    $('#barYearSelect, #barMonthSelect').on('change', () => loadChart('bar'));
-    $('#barResetBtn').on('click', () => {
-      $('#barYearSelect').val(new Date().getFullYear());
-      $('#barMonthSelect').val(null).trigger('change');
-      $('#events-bar').val('');
-      $('#attendanceType-bar').val('');
-      addAttendanceTypes('#attendanceType-bar');
-      loadChart('bar');
-    });
-
-    $('#pieYearSelect').on('change', () => loadChart('pie'));
-    $('#pieResetBtn').on('click', () => {
-      $('#pieYearSelect').val(new Date().getFullYear());
-      $('#events-pie').val('');
-      loadChart('pie');
-    });
-
-    $('#eventsYearSelect').on('change', () => loadChart('events'));
-    $('#eventsResetBtn').on('click', () => {
-      $('#eventsYearSelect').val(new Date().getFullYear());
-      loadChart('events');
-    });
-
-    $('#guestYearSelect, #guestMonthSelect').on('change', () => loadChart('guest'));
-    $('#guestResetBtn').on('click', () => {
-      $('#guestYearSelect').val(new Date().getFullYear());
-      $('#guestMonthSelect').val(null).trigger('change');
-      loadChart('guest');
-    });
   </script>
-
 </body>
 
 </html>
