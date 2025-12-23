@@ -17,7 +17,6 @@
   <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="{{ asset('css/charts.css') }}">
 
- 
 </head>
 
 <body>

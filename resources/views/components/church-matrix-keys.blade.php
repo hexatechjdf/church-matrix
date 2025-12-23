@@ -77,7 +77,7 @@
                  @csrf
                  <div class="card-modern">
                      <div class="card-header-modern info">
-                         <h5>Connect Your Own Church Matrix Account</h5>
+                         <h5>Connect Your Own Church Metrics Account</h5>
                      </div>
                      <div class="card-body-modern">
                          <div class="form-group">
@@ -90,7 +90,7 @@
 
                          <div class="form-group">
                              <label class="form-label">
-                                 Church Matrix API Key <span class="required">*</span>
+                                 Church Metrics API Key <span class="required">*</span>
                              </label>
                              <input type="text" name="church_matrix_api" class="form-control"
                                  value="{{ $settings->refresh_token ?? '' }}" required>

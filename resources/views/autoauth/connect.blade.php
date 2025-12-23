@@ -66,7 +66,7 @@
 
                 },
                 complete: function() {
-                    console.log("completion : " + data);
+                    // console.log("completion : " + data);
 
                 }
             });

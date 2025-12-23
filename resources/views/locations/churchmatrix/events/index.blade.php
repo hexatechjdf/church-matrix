@@ -225,9 +225,9 @@
 
             $('#eventsTable').DataTable({
                 processing: true,
-                serverSide: false, // All data in one request
+                serverSide: false,
                 ajax: "{{ route('locations.churchmatrix.integration.events.data') }}",
-                pageLength: 20, // ✅ Sirf 1 row per page
+                pageLength: 10,
                 columns: [{
                         data: 'name',
                         name: 'name'

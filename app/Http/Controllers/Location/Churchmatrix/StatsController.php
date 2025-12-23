@@ -25,11 +25,12 @@ class StatsController extends Controller
 
     public function timesChartData(Request $request)
     {
-        // dd($request->all());
+        $range = parseDateRange($request->weekly_date, 'weekly');
         $user = loginUser();
         $year   = $request->year ?? now()->year;
         $months = $request->months;
         $category_id = $request->category_id ?? null;
+        $time_id = $request->time_id ?? null;
         $campus_id = $this->churchService->getUserCampusId($request,$user);
 
         $column_y = $request->coly ?? 'service_time';
@@ -43,7 +44,6 @@ class StatsController extends Controller
 
             $groupY = 'service_time';
         } else {
-            // category_name case
             $selectY = "category_name";
             $groupY  = 'category_name';
         }
@@ -51,31 +51,40 @@ class StatsController extends Controller
         $monthNumbers = $months ?: range(1, 12);
 
         $records = DB::table('church_records')
-            ->selectRaw("
-                MONTH(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ')) as month,
-                {$selectY},
-                SUM(value) as total_value
-            ")
-            ->whereYear(
-                DB::raw("STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ')"),
-                $year
-            )
-            ->when($months, function ($q) use ($months) {
-                $q->whereIn(
-                    DB::raw("MONTH(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
-                    $months
-                );
-            })
-            ->when($campus_id, function ($q) use ($campus_id) {
-                $q->where('campus_unique_id',$campus_id);
-            })
-            ->when($category_id, function ($q) use ($category_id) {
-                $q->where('category_unique_id',$category_id);
-            })
-            ->groupBy($groupY, 'month')
-            ->orderBy('month')
-            ->orderBy($groupY)
-            ->get();
+        ->selectRaw("
+            MONTH(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ')) as month,
+            {$selectY},
+            SUM(value) as total_value
+        ")
+        ->when($request->type === 'pie' && $range, function ($q) use ($range) {
+            $q->whereBetween(
+                DB::raw("DATE(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
+                [$range['from'], $range['to']]
+            );
+        })
+        ->whereYear(
+            DB::raw("STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ')"),
+            $year
+        )
+        ->when($months, function ($q) use ($months) {
+            $q->whereIn(
+                DB::raw("MONTH(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
+                $months
+            );
+        })
+        ->when($campus_id, function ($q) use ($campus_id) {
+            $q->where('campus_unique_id', $campus_id);
+        })
+        ->when($time_id, function ($q) use ($time_id) {
+            $q->where('service_unique_time_id', $time_id);
+        })
+        ->when($category_id, function ($q) use ($category_id) {
+            $q->where('category_unique_id', $category_id);
+        })
+        ->groupBy($groupY, 'month')
+        ->orderBy('month')
+        ->orderBy($groupY)
+        ->get();
 
         $labels = [];
         $series = [];
@@ -84,7 +93,7 @@ class StatsController extends Controller
         if ($request->chart == 'pie') {
 
             $grouped = collect($records)
-                ->groupBy($column_y) // category_name
+                ->groupBy($column_y)
                 ->map(function ($rows) {
                     return $rows->sum('total_value');
                 });
@@ -114,7 +123,7 @@ class StatsController extends Controller
 
             foreach ($records as $record) {
                 if ($record->{$column_y} == $id) {
-                    $monthIndex = ((int) $record->{$column_x}) - 1; // month → 0-based
+                    $monthIndex = ((int) $record->{$column_x}) - 1;
                     $attendanceData[$monthIndex] = (float) $record->total_value;
                 }
             }
@@ -128,36 +137,126 @@ class StatsController extends Controller
             ];
         }
 
-
-        // $datasets = [];
-        // foreach ($times as $id) {
-        //     $attendanceData = $chartLabels->map(function ($week) use ($records, $id, $column_x,$column_y) {
-        //         $record = $records->filter(function ($item) use ($week, $id, $column_x,$column_y) {
-        //             return $item->{$column_x} == $week && $item->{$column_y} == $id;
-        //         })->pluck('total_value')->toArray()[0] ?? 0;
-
-        //         return $record;
-        //     });
-
-        //     if (count($attendanceData) > 0) {
-        //         $datasets[] = [
-        //             // 'label' => $id,
-        //             'name' => $id,
-        //             'data' => $attendanceData,
-        //             'backgroundColor' => 'rgba(' . rand(0, 255) . ',' . rand(0, 255) . ',' . rand(0, 255) . ',0.5)',
-        //             'borderColor' => 'rgba(0,0,0,0.1)',
-        //             'borderWidth' => 1
-        //         ];
-        //     }
-        // }
-
-        // dd($categories,$datasets);
-
         return response()->json([
             'categories'      => $categories,
             'series'          => $datasets,
         ]);
     }
+
+
+    // public function timesChartData(Request $request)
+    // {
+    //     $range = $request->weekly_date ? parseDateRange($request->weekly_date) : null;
+    //     $user = loginUser();
+    //     $year   = $request->year ?? now()->year;
+    //     $months = $request->months;
+    //     $category_id = $request->category_id ?? null;
+    //     $time_id = $request->time_id ?? null;
+    //     $campus_id = $this->churchService->getUserCampusId($request,$user);
+
+    //     $column_y = $request->coly ?? 'service_time';
+    //     $column_x = $request->colx ?? 'month';
+
+    //     if ($column_y === 'service_time') {
+    //         $selectY = "DATE_FORMAT(
+    //             MIN(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ')),
+    //             '%W %h:%i %p'
+    //         ) as service_time";
+
+    //         $groupY = 'service_time';
+    //     } else {
+    //         $selectY = "category_name";
+    //         $groupY  = 'category_name';
+    //     }
+
+    //     $monthNumbers = $months ?: range(1, 12);
+
+    //     $records = DB::table('church_records')
+    //         ->selectRaw("
+    //             MONTH(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ')) as month,
+    //             {$selectY},
+    //             SUM(value) as total_value
+    //         ")
+    //         ->whereYear(
+    //             DB::raw("STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ')"),
+    //             $year
+    //         )
+    //         ->when($months, function ($q) use ($months) {
+    //             $q->whereIn(
+    //                 DB::raw("MONTH(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
+    //                 $months
+    //             );
+    //         })
+    //         ->when($campus_id, function ($q) use ($campus_id) {
+    //             $q->where('campus_unique_id',$campus_id);
+    //         })
+    //         ->when($time_id, function ($q) use ($time_id) {
+    //             $q->where('service_unique_time_id',$time_id);
+    //         })
+    //         ->when($category_id, function ($q) use ($category_id) {
+    //             $q->where('category_unique_id',$category_id);
+    //         })
+    //         ->groupBy($groupY, 'month')
+    //         ->orderBy('month')
+    //         ->orderBy($groupY)
+    //         ->get();
+
+    //     $labels = [];
+    //     $series = [];
+
+
+    //     if ($request->chart == 'pie') {
+
+    //         $grouped = collect($records)
+    //             ->groupBy($column_y)
+    //             ->map(function ($rows) {
+    //                 return $rows->sum('total_value');
+    //             });
+
+    //         $labels = $grouped->keys()->values();
+    //         $series = $grouped->values()->map(fn($v) => (int) $v);
+
+    //         return response()->json([
+    //             'labels' => $labels,
+    //             'series' => $series
+    //         ]);
+    //     }
+
+
+    //     $categories = collect($monthNumbers)
+    //         ->map(fn($m) => Carbon::create()->month($m)->format('M'))
+    //         ->values();
+
+    //     $chartLabels = $records->pluck($column_x)->unique()->filter()->values();
+    //     $times = $records->pluck($column_y)->unique()->filter()->values();
+
+    //     $datasets = [];
+
+    //     foreach ($times as $id) {
+
+    //         $attendanceData = array_fill(0, 12, 0);
+
+    //         foreach ($records as $record) {
+    //             if ($record->{$column_y} == $id) {
+    //                 $monthIndex = ((int) $record->{$column_x}) - 1;
+    //                 $attendanceData[$monthIndex] = (float) $record->total_value;
+    //             }
+    //         }
+
+    //         $datasets[] = [
+    //             'name' => $id,
+    //             'data' => $attendanceData,
+    //             'backgroundColor' => 'rgba(' . rand(0,255) . ',' . rand(0,255) . ',' . rand(0,255) . ',0.5)',
+    //             'borderColor' => 'rgba(0,0,0,0.1)',
+    //             'borderWidth' => 1
+    //         ];
+    //     }
+
+    //     return response()->json([
+    //         'categories'      => $categories,
+    //         'series'          => $datasets,
+    //     ]);
+    // }
 
     public function getWeekStats(Request $request)
     {
@@ -166,14 +265,12 @@ class StatsController extends Controller
 
         $from = $range['from'];
         $to   = $range['to'];
-
-
+        $time_id = $request->time_id ?? null;
 
         $column_y = $request->coly ?? 'category_name';
         $campus_id = $this->churchService->getUserCampusId($request,$user);
 
-        // Step 1: Get all weeks with correct start and end dates
-    $weeks = DB::table('church_records')
+        $weeks = DB::table('church_records')
         ->selectRaw("
             YEARWEEK(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'), 1) as week_no,
             MIN(DATE_SUB(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'),
@@ -190,14 +287,13 @@ class StatsController extends Controller
         ->when($campus_id, function ($q) use ($campus_id) {
                 $q->where('campus_unique_id',$campus_id);
         })
+        ->when($time_id, function ($q) use ($time_id) {
+             $q->where('service_unique_time_id',$time_id);
+         })
         ->groupBy(DB::raw('YEARWEEK(STR_TO_DATE(service_date_time, "%Y-%m-%dT%H:%i:%s.%fZ"), 1)'))
         ->orderBy('week_no')
         ->get();
 
-        // dd($weeks,$from,$to);
-
-
-        // Step 2: Get totals per category per week
         $records = DB::table('church_records')
             ->selectRaw("
                 YEARWEEK(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'), 1) as week_no,
@@ -208,18 +304,19 @@ class StatsController extends Controller
                 DB::raw("DATE(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
                 [$from, $to]
             )
+            ->when($campus_id, function ($q) use ($campus_id) {
+                    $q->where('campus_unique_id',$campus_id);
+            })
+            ->when($time_id, function ($q) use ($time_id) {
+                $q->where('service_unique_time_id',$time_id);
+            })
             ->groupBy('category_name', DB::raw('YEARWEEK(STR_TO_DATE(service_date_time, "%Y-%m-%dT%H:%i:%s.%fZ"), 1)'))
             ->get();
 
-        // dd($records,$from,$to);
-
-
-        // Step 3: Format week labels like '01 Jan - 07 Jan'
         $categories = $weeks->map(function($w) {
             return date('d M', strtotime($w->week_start)) . ' - ' . date('d M', strtotime($w->week_end));
         });
 
-        // Step 4: Prepare series
         $series = [];
         foreach ($records->groupBy($column_y) as $name => $rows) {
             $data = $weeks->map(function($w) use ($rows) {
@@ -232,42 +329,10 @@ class StatsController extends Controller
             ];
         }
 
-        // dd($series,$categories);
-
-        // Step 5: Return JSON
         return response()->json([
             'categories' => $categories,
             'series' => $series
         ]);
     }
-
-
-
-
-
-
-
-    //  $records = DB::table('church_records')
-//             ->selectRaw("
-//                 MONTH(dt) as month,
-//                 DATE_FORMAT(dt, '%W %h:%i %p') as service_time,
-//                 SUM(value) as total_value
-//             ")
-//             ->fromSub(function ($q) {
-//                 $q->from('church_records')
-//                 ->selectRaw("
-//                     STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ') as dt,
-//                     value
-//                 ");
-//             }, 't')
-//             ->whereYear('dt', $year)
-//             ->when($months, function ($q) use ($months) {
-//                 $q->whereIn(DB::raw('MONTH(dt)'), $months);
-//             })
-//             ->groupBy('dt')
-//             ->orderBy('month')
-//             ->orderBy('dt')
-//             ->get();
-        // dd($records);
 
 }

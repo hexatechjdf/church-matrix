@@ -23,7 +23,6 @@ class ChartController extends Controller
         return view('locations.planning.event_filter');
     }
 
-   
     public function getChartJson(Request $request)
     {
         $year = $request->year ?? date('Y');
@@ -166,7 +165,6 @@ class ChartController extends Controller
         ]);
     }
 
-  
     public function getEventsChartData(Request $request)
     {
         $year = $request->input('year', date('Y'));
