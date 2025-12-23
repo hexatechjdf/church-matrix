@@ -14,9 +14,11 @@
         "laravel/sanctum": "^2.11",
         "laravel/tinker": "^2.5",
         "phpmailer/phpmailer": "^6.7",
+        "symfony/mailer": "^6.1",
         "yajra/laravel-datatables": "1.5"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^3.7",
         "barryvdh/laravel-ide-helper": "^2.12",
         "facade/ignition": "^2.5",
         "fakerphp/faker": "^1.9.1",
