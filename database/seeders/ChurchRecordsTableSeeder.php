@@ -11,74 +11,75 @@ class ChurchRecordsTableSeeder extends Seeder
 {
     public function run()
     {
+        ini_set('memory_limit', '1024M');
+        set_time_limit(0);
+
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('church_records')->truncate(); 
+        DB::table('church_records')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $faker = \Faker\Factory::create();
 
-        $campusIds = [137882, 137883, 137884, 137885]; 
-        $categoryIds = [9, 10, 11, 12, 13, 14]; 
+        $campusIds   = [137882, 137883, 137884, 137885];
+        $categoryIds = [9, 10, 11, 12, 13, 14];
 
         $startDate = Carbon::parse('2023-01-01');
 
-        $records = [];
-        $counter = 0;
-        $totalRecords = 100;
+        $totalRecords = 1_000_000;
+        $batchSize    = 2000;
+        $inserted     = 0;
 
-        echo "Generating exactly 100 records...\n";
+        echo "Seeding 1,000,000 church_records...\n";
 
-        while ($counter < $totalRecords) {
-            $currentWeekStart = $startDate->copy()->addWeeks($counter % 10)->startOfWeek(Carbon::SUNDAY);
+        while ($inserted < $totalRecords) {
+            $records = [];
 
-            foreach ($campusIds as $campusId) {
-                foreach ($categoryIds as $categoryId) {
-                    if ($counter >= $totalRecords) {
-                        break 3; 
-                    }
+            for ($i = 0; $i < $batchSize && $inserted < $totalRecords; $i++) {
 
-                    $eventId = $faker->optional(0.5)->randomElement([3834, 3835]);
+                $weekOffset = rand(0, 104); 
+                $weekStart  = $startDate->copy()->addWeeks($weekOffset)->startOfWeek(Carbon::SUNDAY);
 
-                    $value = match($categoryId) {
-                        9  => $faker->numberBetween(120, 420),
-                        10 => $faker->numberBetween(3, 22),
-                        11 => $faker->randomFloat(2, 80000, 350000),
-                        12 => $faker->numberBetween(8, 55),
-                        13 => $faker->numberBetween(2, 12),
-                        14 => $faker->numberBetween(15, 120),
-                        default => $faker->numberBetween(50, 300)
-                    };
+                $campusId   = $campusIds[array_rand($campusIds)];
+                $categoryId = $categoryIds[array_rand($categoryIds)];
 
-                    $weekRef = $currentWeekStart->format('y') . str_pad($currentWeekStart->weekOfYear, 2, '0', STR_PAD_LEFT);
+                $value = match ($categoryId) {
+                    9  => rand(120, 420),
+                    10 => rand(3, 22),
+                    11 => rand(80_000, 350_000),
+                    12 => rand(8, 55),
+                    13 => rand(2, 12),
+                    14 => rand(15, 120),
+                    default => rand(50, 300),
+                };
 
-                    $records[] = [
-                        'record_unique_id'       => (string) Str::uuid(),
-                        'organization_unique_id' => 1,
-                        'category_unique_id'     => $categoryId,
-                        'week_reference'         => (int)$weekRef,
-                        'week_no'                => $currentWeekStart->weekOfYear,
-                        'week_volume'            => $currentWeekStart->format('M d') . ' - ' . $currentWeekStart->copy()->endOfWeek()->format('M d, Y'),
-                        'service_date_time'      => $currentWeekStart->format('Y-m-d 10:30:00'),
-                        'service_time'           => $faker->randomElement(['09:00 AM', '10:30 AM', '06:00 PM', '07:30 PM']),
-                        'service_timezone'       => 'Pakistan Standard Time',
-                        'value'                  => $value,
-                        'service_unique_time_id' => $faker->numberBetween(1000, 9999),
-                        'event_unique_id'        => $eventId,
-                        'campus_unique_id'       => $campusId,
-                        'record_created_at'      => now()->format('Y-m-d H:i:s'),
-                        'record_updated_at'      => now()->format('Y-m-d H:i:s'),
-                        'created_at'             => now(),
-                        'updated_at'             => now(),
-                    ];
+                $records[] = [
+                    'record_unique_id'       => (string) Str::uuid(),
+                    'organization_unique_id' => 1,
+                    'category_unique_id'     => $categoryId,
+                    'week_reference'         => (int)($weekStart->format('y') . str_pad($weekStart->weekOfYear, 2, '0', STR_PAD_LEFT)),
+                    'week_no'                => $weekStart->weekOfYear,
+                    'week_volume'            => $weekStart->format('M d') . ' - ' . $weekStart->copy()->endOfWeek()->format('M d, Y'),
+                    'service_date_time'      => $weekStart->format('Y-m-d 10:30:00'),
+                    'service_time'           => ['09:00 AM','10:30 AM','06:00 PM','07:30 PM'][array_rand([0,1,2,3])],
+                    'service_timezone'       => 'Pakistan Standard Time',
+                    'value'                  => $value,
+                    'service_unique_time_id' => rand(1000, 9999),
+                    'event_unique_id'        => rand(0,1) ? 3834 : 3835,
+                    'campus_unique_id'       => $campusId,
+                    'record_created_at'      => now(),
+                    'record_updated_at'      => now(),
+                    'created_at'             => now(),
+                    'updated_at'             => now(),
+                ];
 
-                    $counter++;
-                }
+                $inserted++;
             }
+
+            DB::table('church_records')->insert($records);
+
+            echo "Inserted: {$inserted} / {$totalRecords}\n";
         }
 
-        // Insert all records
-        DB::table('church_records')->insert($records);
-
-        echo "Done! Total records inserted: $counter\n";
+        echo "DONE! 1,000,000 records inserted successfully.\n";
     }
 }

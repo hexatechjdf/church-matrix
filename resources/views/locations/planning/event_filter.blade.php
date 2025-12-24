@@ -12,7 +12,7 @@
 
   <div class="card" id="lineChartCard">
     <div class="chart-header">
-      <div class="chart-title">Monthly Attendance Trend</div>
+      <div class="chart-title">Monthly Attendance Trends by Category</div>
       <div id="lineAvg" class="chart-average charts"></div>
     </div>
 
@@ -71,7 +71,7 @@
   <!-- Stacked Bar Chart -->
   <div class="card" id="barChartCard">
     <div class="chart-header">
-    <div class="chart-title">Attendance by Month (Events Stacked)</div>
+    <div class="chart-title">Attendance Breakdown by month</div>
     <div id="barAvg" class="charts text-center mb-3"></div>
     </div>
 
@@ -129,7 +129,7 @@
   <!-- Pie Chart -->
   <div class="card" id="pieChartCard">
     <div class="chart-header">
-    <div class="chart-title">Yearly Attendance by Type</div>
+    <div class="chart-title">Yearly Attendance by Category</div>
     <div id="pieAvg" class="charts text-center mb-3"></div>
     </div>
 
@@ -161,7 +161,7 @@
   </div>
 
   <!-- Event Chart -->
-  <div class="card" id="eventsChartCard">
+  {{-- <div class="card" id="eventsChartCard">
     <div class="chart-header">
     <div class="chart-title">Attendance by Event (Months Stacked)</div>
     <div id="eventsAvg" class="charts text-center mb-3"></div>
@@ -187,5 +187,5 @@
       </div>
     </div>
 
-  </div>
+  </div> --}}
 </div>
