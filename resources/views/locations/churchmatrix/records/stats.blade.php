@@ -13,6 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="{{ asset('plugins/select2/select2.min.css') }}" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" rel="stylesheet">
 
     <style>
         body {
@@ -305,7 +306,8 @@
         .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
             color: white !important;
         }
-        .datefield{
+
+        .datefield {
             color: black !important;
             background: white !important;
         }
@@ -456,16 +458,18 @@
                             @include('locations.churchmatrix.components.categoryfield')
                         </div>
 
-                        <div class="times_field_area field-times d-none">
-                            @include('locations.churchmatrix.components.times')
-                        </div>
-
-                        <!-- Campus -->
                         @if ($user->church_admin)
                             <div class="field-campus d-none">
                                 @include('locations.churchmatrix.components.campusfields')
                             </div>
                         @endif
+
+                        <div class="times_field_area field-times d-none">
+                            @include('locations.churchmatrix.components.times')
+                        </div>
+
+                        <!-- Campus -->
+
 
                         <!-- Year -->
                         <div class="mb-3 field-year d-none">
@@ -503,6 +507,7 @@
 
     <!-- DateRangePicker JS -->
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
 
     <script>
         $(function() {
@@ -582,9 +587,9 @@
         let serverSideCall = {{ $user->church_admin ? 'false' : 'true' }};
         const filterConfig = {
             time_chart: ['category', 'year', 'month', 'campus'],
-            category_time_chart: ['year', 'month', 'campus','times'],
-            pie_chart: ['year', 'month', 'campus','week-range','times'],
-            weekly_chart: ['date-range', 'campus','times']
+            category_time_chart: ['year', 'month', 'campus', 'times'],
+            pie_chart: ['year', 'month', 'campus', 'week-range', 'times'],
+            weekly_chart: ['date-range', 'campus', 'times']
         };
 
         function toggleFilterFields(type) {
@@ -665,10 +670,11 @@
 
             $('#serviceTimeModal').on('shown.bs.modal', function() {
                 initSelect2("#fetchselect2", "category");
-                initSelect2("#fetchselect2", "service-time");
                 if (!serverSideCall) {
                     initSelect2("#fetchselect2", "campuses");
                 }
+                initSelect2("#fetchselect2", "service-time");
+
             });
         });
 

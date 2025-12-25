@@ -27,7 +27,7 @@
                     dataType: 'json',
                     delay: 250,
                     data: function(params) {
-                        let campus_id = $container.find('select[name="campus_id"]').val();
+                        let campus_id =$('.campus-select').val();
                         return {
                             search: params.term || "",
                             page: params.page || 1,

@@ -635,16 +635,16 @@ class CRM
         return is_null($pr) || empty($pr);
     }
 
-    public static function getCompany($user)
+    public static function getCompany($user,$cutom_type = null)
     {
-        $token = $user->crmauth ?? null;
+        $token = $user->crmtoken ?? null;
         $status = false;
         $type = '';
         $detail = '';
         $message = "Connect to agency first";
         $load_more = false;
         if ($token) {
-            $type = $token->user_type;
+            $type = $cutom_type ?? $token->user_type;
 
             $query = 'companies/' . $token->company_id;
 
@@ -659,6 +659,7 @@ class CRM
                     return [$detail->company->name, $detail->company->id];
                 }
             } catch (\Throwable $th) {
+                dd($th);
                 //throw $th;
             }
 

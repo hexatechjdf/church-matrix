@@ -12,13 +12,13 @@ class ChurchRecordsTableSeeder extends Seeder
     public function run()
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('church_records')->truncate(); 
+        DB::table('church_records')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $faker = \Faker\Factory::create();
 
-        $campusIds = [137882, 137883, 137884, 137885]; 
-        $categoryIds = [9, 10, 11, 12, 13, 14]; 
+        $campusIds = [137882, 137883, 137884, 137885];
+        $categoryIds = [9, 10, 11, 12, 13, 14];
 
         $startDate = Carbon::parse('2023-01-01');
 
@@ -34,7 +34,7 @@ class ChurchRecordsTableSeeder extends Seeder
             foreach ($campusIds as $campusId) {
                 foreach ($categoryIds as $categoryId) {
                     if ($counter >= $totalRecords) {
-                        break 3; 
+                        break 3;
                     }
 
                     $eventId = $faker->optional(0.5)->randomElement([3834, 3835]);

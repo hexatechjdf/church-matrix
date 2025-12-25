@@ -38,7 +38,7 @@ class ChurchMatrixController extends Controller
         $crm = getChurchToken();
         $regions =  $this->service->fetchRegions($crm) ?? null;
 
-        return response()->json(['regions' => $regions,'seccess' => 'Connected successfully!']);
+        return response()->json(['regions' => $regions,'message' => 'Connected successfully!', 'success' => true]);
     }
 
     public function saveRegion(Request $request)
@@ -49,7 +49,7 @@ class ChurchMatrixController extends Controller
 
         $this->service->saveChurchSetting($request->region_id,'company_id');
 
-        return response()->json(['seccess' => 'Region saved successfully!']);
+        return response()->json(['message' => 'Region saved successfully!', 'success' => true]);
     }
 
     public function saveLocation(Request $request)
@@ -63,7 +63,7 @@ class ChurchMatrixController extends Controller
         $user->church_admin = 1;
         $user->save();
 
-        return response()->json(['seccess' => 'Location ID saved successfully!']);
+        return response()->json(['message' => 'Location ID saved successfully!' , 'success' => true]);
     }
 
     public function saveTimezone(Request $request)
@@ -78,7 +78,7 @@ class ChurchMatrixController extends Controller
 
         // $this->service->saveChurchSetting($request->timezone,'timezone');
 
-        return response()->json(['success' => 'Timezone updated successfully!']);
+        return response()->json(['message' => 'Timezone updated successfully!' , 'success' => true]);
     }
 
     public function requestlisting(Request $request)
@@ -98,14 +98,14 @@ class ChurchMatrixController extends Controller
         $token = CrmToken::find($id);
 
         if(!$token){
-            return response()->json(['message' => 'Token not found'], 404);
+            return response()->json(['message' => 'Token not found', 'error' => true], 404);
         }
 
         $user = $token->user;
         $user->church_admin = true;
         $user->save();
 
-        return response()->json(['message' => 'Token accepted successfully']);
+        return response()->json(['message' => 'Token accepted successfully', 'success' => true]);
 
     }
 
@@ -115,11 +115,11 @@ class ChurchMatrixController extends Controller
             $crm = getChurchToken('location', $id);
             $res = $this->service->fetchRegions($crm);
 
-            return response()->json(['message' => 'Tested successfully']);
+            return response()->json(['message' => 'Tested successfully', 'success' => true]);
         }catch(\Exception $e){
 
         }
 
-        return response()->json(['message' => 'Unauthorized Data'], 404);
+        return response()->json(['message' => 'Unauthorized Data','error' => true], 404);
     }
 }

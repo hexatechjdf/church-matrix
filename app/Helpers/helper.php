@@ -694,6 +694,18 @@ function parseDateRange($daterange = null, $type = null)
     ];
 }
 
+
+function getAuthUrl($web)
+{
+    return route('auth.check') . '?web=' . $web . '&location_id=' . braceParser('[[location.id]]') . '&sessionkey=' . braceParser('[[user.sessionKey]]');
+}
+
+function braceParser($value)
+{
+    return str_replace(['[', ']'], ['{', '}'], $value);
+}
+
+
 //  function parseDateRange($daterange = null,$type = 'weekly')
 //     {
 //         // Default: current year

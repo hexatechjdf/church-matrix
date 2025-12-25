@@ -16,16 +16,16 @@
     @endif --}}
     @if (auth()->user()->role == 0)
         <li class="leftbar-menu-item">
-            <a href="{{route('setting.add')}}" class="menu-link">
-                <i data-feather="pie-users" class="align-self-center vertical-menu-icon icon-dual-vertical"></i>
+            <a href="{{route('setting.index')}}" class="menu-link">
+                <i data-feather="settings" class="align-self-center vertical-menu-icon icon-dual-vertical"></i>
                 <span >Setting</span>
             </a>
         </li>
 
           <li class="leftbar-menu-item">
             <a href="{{ route('church-matrix.index') }}" class="menu-link">
-                <i data-feather="layers" class="align-self-center vertical-menu-icon icon-dual-vertical"></i>
-                <span>Church Matrix</span>
+                <i data-feather="settings" class="align-self-center vertical-menu-icon icon-dual-vertical"></i>
+                <span>Church Metrics</span>
             </a>
         </li>
     @endif

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\CampaignsController;
 use App\Http\Controllers\DialController;
 use App\Http\Controllers\GoHieghLevelController;
@@ -128,7 +129,7 @@ Route::prefix('locations')->name('locations.')->group(function () {
 
 Route::prefix('settings')->name('setting.')->group(function () {
     $controller = SettingController::class;
-    Route::get('/add', [$controller, 'add'])->name('add');
+    Route::get('/add', [$controller, 'index'])->name('index');
     Route::post('/save/{id?}', [$controller, 'save'])->name('save');
 });
 
@@ -165,6 +166,11 @@ Route::get('/get-chart-json', [ChartController::class, 'getChartJson']);
 Route::get('/get-events-chart-data', [ChartController::class, 'getEventsChartData']);
 
 
+Route::prefix('campuses')->name('campuses.')->group(function () {
+    Route::get('/', [CampusController::class, 'list'])->name('list');
+    Route::post('/save', [CampusController::class, 'save'])->name('save'); // create + update
+    Route::delete('/{id}', [CampusController::class, 'destroy'])->name('delete');
+});
 
 // Planning Center Connection Routes
 Route::prefix('planning-center')->name('planningcenter.')->group(function () {
@@ -190,7 +196,7 @@ Route::get('/get-people', [PlanningController::class, 'getContact'])->name('cont
 // });
 
 
-Route::prefix('locations')->name('locations.')->group(function () {
+Route::middleware('location')->prefix('locations')->name('locations.')->group(function () {
     Route::prefix('churchmatrix')->name('churchmatrix.')->group(function () {
         $controller = IndexController::class;
         Route::get('/', [$controller, 'index'])->name('index');
@@ -331,3 +337,38 @@ Route::get('/get-attendance-type', function (PlanningService $service) {
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[created_at]=2025-12-01
 //https://api.planningcenteronline.com/check-ins/v2/headcounts?include=attendance_type,event_time&order=created_at&where[updated_at]=2025-12-01
 
+use App\Models\Setting;
+use Illuminate\Support\Facades\DB;
+use App\Jobs\Setting\ManageTokenJob;
+use App\Jobs\Setting\CreateTokenJob;
+
+Route::get('/manage/tokens',function(){
+   $settings = DB::table('settings')
+    ->select(
+        'location_id',
+        DB::raw("GROUP_CONCAT(CONCAT(`key`, ':', `value`) SEPARATOR '||') as settings")
+    )
+    ->groupBy('location_id')
+    ->get();
+
+    $settingsGrouped = $settings->mapWithKeys(function ($item) {
+        $pairs = explode('||', $item->settings);
+
+        $settingsArray = [];
+        foreach ($pairs as $pair) {
+            [$key, $value] = explode(':', $pair, 2);
+            $settingsArray[$key] = $value;
+        }
+            return [$item->location_id => $settingsArray];
+    });
+
+// dd($settingsGrouped);
+    $settingsGrouped
+    ->chunk(100)
+    ->each(function ($chunk) {
+        dispatch((new ManageTokenJob($chunk)));
+    });
+
+    return 1;
+
+});

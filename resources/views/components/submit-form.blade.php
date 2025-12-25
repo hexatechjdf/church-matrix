@@ -62,7 +62,6 @@
 
 
     function automatRegions(regions) {
-        alert(regions);
         let select = $("#region_id");
         if (!regions || regions.length === 0) {
             select.html('<option value="">-- Choose Region --</option>');

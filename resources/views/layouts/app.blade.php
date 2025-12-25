@@ -54,7 +54,8 @@
             border-radius: 3px;
             box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
         }
-        .left-sidenav .topbar-left .logo .logo-lg{
+
+        .left-sidenav .topbar-left .logo .logo-lg {
             height: 65px !important;
         }
     </style>
@@ -337,7 +338,25 @@
         </script>
     @endif
 
+
     <script>
+        function dispMessage(isError, message, timeout = 10000) {
+            try {
+                if (isError) {
+                    toastr.error(message, {
+                        timeOut: timeout
+                    });
+                } else {
+                    toastr.success(message, {
+                        timeOut: timeout
+                    });
+                }
+
+            } catch (error) {
+                alert(message);
+            }
+        }
+
         $(".dropify").dropify();
         $(".select2").select2({
             width: '100%'
@@ -421,6 +440,12 @@
             }, 2000);
 
         }
+
+        $(document).on('click', '.btn-close', function(e) {
+            e.preventDefault();
+
+            $(this).closest('.modal').modal('hide');
+        })
     </script>
     @yield('js')
     @stack('script')

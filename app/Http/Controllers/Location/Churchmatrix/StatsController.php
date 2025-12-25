@@ -72,9 +72,7 @@ class StatsController extends Controller
                 $months
             );
         })
-        ->when($campus_id, function ($q) use ($campus_id) {
-            $q->where('campus_unique_id', $campus_id);
-        })
+
         ->when($time_id, function ($q) use ($time_id) {
             $q->where('service_unique_time_id', $time_id);
         })
@@ -284,9 +282,7 @@ class StatsController extends Controller
             DB::raw("DATE(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
             [$from, $to]
         )
-        ->when($campus_id, function ($q) use ($campus_id) {
-                $q->where('campus_unique_id',$campus_id);
-        })
+
         ->when($time_id, function ($q) use ($time_id) {
              $q->where('service_unique_time_id',$time_id);
          })
@@ -304,9 +300,7 @@ class StatsController extends Controller
                 DB::raw("DATE(STR_TO_DATE(service_date_time, '%Y-%m-%dT%H:%i:%s.%fZ'))"),
                 [$from, $to]
             )
-            ->when($campus_id, function ($q) use ($campus_id) {
-                    $q->where('campus_unique_id',$campus_id);
-            })
+
             ->when($time_id, function ($q) use ($time_id) {
                 $q->where('service_unique_time_id',$time_id);
             })
