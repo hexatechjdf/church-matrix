@@ -19,9 +19,6 @@ class CampusController extends Controller
             ->make(true);
     }
 
-    /**
-     * Create + Update (single method)
-     */
     public function save(Request $request)
     {
         $request->validate([
@@ -30,11 +27,9 @@ class CampusController extends Controller
             'campus_name'  => 'nullable|string|max:255',
         ]);
 
-        // Check if campus_unique_id already exists
         $campusExistsQuery = Campus::where('campus_unique_id', $request->campus_id);
 
         if ($request->id) {
-            // Edit → ignore current record
             $campusExistsQuery->where('id', '!=', (int)$request->id);
         }
 
@@ -47,7 +42,6 @@ class CampusController extends Controller
             ]);
         }
 
-        // Create or Update
         Campus::updateOrCreate(
             ['id' => $request->id],
             [
@@ -67,16 +61,13 @@ class CampusController extends Controller
     }
 
 
-    /**
-     * Delete campus
-     */
-    public function destroy($id)
-    {
-        Campus::findOrFail($id)->delete();
+    // public function destroy($id)
+    // {
+    //     Campus::findOrFail($id)->delete();
 
-        return response()->json([
-            'status'  => true,
-            'message' => 'Campus deleted successfully'
-        ]);
-    }
+    //     return response()->json([
+    //         'status'  => true,
+    //         'message' => 'Campus deleted successfully'
+    //     ]);
+    // }
 }
